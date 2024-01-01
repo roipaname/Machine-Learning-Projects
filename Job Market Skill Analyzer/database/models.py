@@ -213,6 +213,7 @@ class Skill(Base):
     """Master skill registry — canonical source of truth. """
 
     __tablename__ = "skills"
+    
     skill_id:        Mapped[UUID]=mapped_column(UUID(as_uuid=True),default=uuid.uuid4,primary_key=True)
     name:            Mapped[str]           = mapped_column(String(255), nullable=False)
     normalized_name: Mapped[str]           = mapped_column(String(255), nullable=False)
