@@ -214,4 +214,5 @@ __pycache__/
 .DS_Store
 
 House Price Prediction (API + DB)/data/raw/*.csv
-
+House Price Prediction (API + DB)/data/processed/*.csv
+House Price Prediction (API + DB)/models/
