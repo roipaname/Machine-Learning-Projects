@@ -47,7 +47,7 @@ class KaggleDataIngestor:
         if removed>0:
             logging.info(f"Removed {removed} rows with missing price values.")
 
-        #Remove etreme outliers in price
+        #Remove extreme outliers in price
         Q1=df_clean['price'].quantile(0.01)
         Q3=df_clean['price'].quantile(0.99)
         df_clean =df_clean[
