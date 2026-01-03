@@ -38,7 +38,7 @@ class FeatureEngineer:
             df['house_size']/features['lot_sqft'],
             None
         )
-        features['bed_bath_ratioe']=np.where(
+        features['bed_bath_ratio']=np.where(
             df['bath']>0,
             df['bed']/df['bath'],
             None
