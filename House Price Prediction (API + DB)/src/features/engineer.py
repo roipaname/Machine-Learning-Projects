@@ -39,7 +39,7 @@ class FeatureEngineer:
             None
         )
         features['bed_bath_ratioe']=np.where(
-            df['bath']>0 >0,
+            df['bath']>0,
             df['bed']/df['bath'],
             None
         )
