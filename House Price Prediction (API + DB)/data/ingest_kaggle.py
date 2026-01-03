@@ -6,7 +6,7 @@ import sys
 import json
 from datetime import datetime
 import logging
-
+import uuid
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.database.connection import DatabaseConnection
 load_dotenv()
@@ -23,16 +23,23 @@ class KaggleDataIngestor:
         if 'prev_sold_date' in df_clean.columns:
             df_clean['prev_sold_date']=pd.to_datetime(df_clean['prev_sold_date'],errors='coerce')
         
+        if 'zip_code' in df_clean.columns:
+           df_clean['zip_code'] = (
+           df_clean['zip_code'].astype(str).str.replace('.0', '', regex=False).str.zfill(5)
+          )
+
+        
         num_cols=df_clean.select_dtypes(include=['number']).columns
 
         for col in num_cols:
             if col in df_clean.columns and col !='zip_code':
                 df_clean[col]=pd.to_numeric(df_clean[col],errors='coerce')
                 median_value=df_clean[col].median()
-                df_clean[col].fillna(median_value)
+                df_clean[col] = df_clean[col].fillna(median_value)
+
         cat_cols=df_clean.select_dtypes(include=['object']).columns
         for col in cat_cols:
-            if col in df_clean.columns and col != 'prev_sold_date' and col !='price' :
+            if col in df_clean.columns and col != 'prev_sold_date'  :
                 df_clean[col]=df_clean[col].astype(str).fillna('Unknown')
         initial_count=len(df_clean)
         df_clean=df_clean[df_clean['price'].notna()]
@@ -55,9 +62,12 @@ class KaggleDataIngestor:
         properties=[]
 
         for idx , row in df.iterrows():
+            raw={
+                k: (None if pd.isna(v) else v) for k,v in row.to_dict().items()
+            }
             property_dict={
-                'property_id': f"KAGGLE_{idx}",
-                'brokered_by':row.get('brokered_by',0),
+                'property_id': f"{uuid.uuid4()}",
+                'brokered_by':int(row.get('brokered_by')) if pd.notna(row.get('brokered_by')) else None,
                 'status':row.get('status',''),
                 'price':float(row.get('price')),
                 'bed':int(row.get('bed')) if pd.notna(row.get('bed')) else None,
@@ -70,7 +80,7 @@ class KaggleDataIngestor:
                 'house_size':float(row.get('house_size')) if pd.notna(row.get('house_size')) else None,
                 'prev_sold_date':row.get('prev_sold_date') if pd.notna(row.get('prev_sold_date')) else None,
                 'source':'Kaggle',
-                'raw_json':json.dumps(row.to_dict(),default=str),
+                'raw_json':json.dumps(raw,default=str),
 
             }
             properties.append(property_dict)
@@ -93,7 +103,7 @@ class KaggleDataIngestor:
         logging.info("Ingesting data into database...")
         total_inserted=0
         try:
-            properties.to_sql('properties',self.db.engine,schema='raw',if_exists='append',index=False,method='multi',chunksize=batch_size)
+            properties.to_sql('properties',self.db.engine,schema='raw',if_exists='append',index=False,method=None,chunksize=batch_size)
             total_inserted=len(properties)
             logging.info(f"Data ingestion complete. Total records inserted: {total_inserted}")
 

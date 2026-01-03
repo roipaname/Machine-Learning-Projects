@@ -22,7 +22,7 @@ CREATE TABLE raw.properties (
     house_size NUMERIC(10,2),
     prev_sold_date DATE,
     
-    -- Metadata
+    -- Metadata 
     source VARCHAR(50) DEFAULT 'Kaggle',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
