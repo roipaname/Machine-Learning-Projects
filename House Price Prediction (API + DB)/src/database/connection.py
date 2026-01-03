@@ -47,4 +47,50 @@ class DatabaseConnection:
         except Exception as e:
             logging.error(f"Database connection test failed: {e}")
             return False
+    def execute_query(self,query,params=None):
+        """Execute a raw SQL query and return the results as a DataFrame."""
+        if not self.engine:
+            self.connect()
+        try:
+            with self.engine.connect() as connection:
+                result=connection.execute(text(query),params or {})
+                connection.commit()
+                return result
+        except Exception as e:
+            logging.error(f"Error executing query: {e}")
+            raise
+    def read_sql(self, query, params=None):
+        """Read SQL query into DataFrame"""
+        if not self.engine:
+            self.connect()
+        
+        return pd.read_sql(query, self.engine, params=params)
 
+    def get_table_count(self,schema,table):
+        """Get the count of rows for a table"""
+        query=f"SELECT COUNT(*) FROM {schema}.{table};"
+        result=self.read_sql(query)
+        return result.iloc[0,0]
+    
+    def close(self):
+        """Close the database connection."""
+        if self.engine:
+            self.engine.dispose()
+            logging.info("Database connection closed.")
+
+            
+
+if __name__ == "__main__":
+    db = DatabaseConnection()
+    db.test_connection()
+    
+    # Show all tables
+    query = """
+    SELECT schemaname, tablename 
+    FROM pg_tables 
+    WHERE schemaname IN ('raw', 'processed', 'models')
+    ORDER BY schemaname, tablename;
+    """
+    tables = db.read_sql(query)
+    print("\nAvailable tables:")
+    print(tables)
