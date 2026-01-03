@@ -5,6 +5,7 @@ from typing import List
 import os
 import sys
 import logging
+import json
 
 #sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database.connection import DatabaseConnection
@@ -48,14 +49,20 @@ class FeatureEngineer:
         logging.info("Numerical features created.")
         return features
 
-    def create_categorical_features(self,df:pd.DataFrame,features:pd.DataFrame)->pd.DataFrame:
+    def create_categorical_features(self,df:pd.DataFrame,features:pd.DataFrame,save_dir='encoders')->pd.DataFrame:
         """Encode categorical features"""
+        os.makedirs(save_dir, exist_ok=True)
         cat_cols={col:f"{col}_encoded" for col in ['state','city','status']}
         for col,encoded_name in cat_cols.items():
             if col in df.columns:
                 unique_values=df[col].dropna().unique()
                 mapping={val:idx for idx,val in enumerate(sorted(unique_values))}
                 self.encoders[col]=mapping
+
+                json_path = os.path.join(save_dir, f"{col}_mapping.json")
+                with open(json_path, "w") as f:
+                    json.dump(mapping, f,indent=4)
+                logging.info(f"Saved {col} mapping to {json_path}")
 
                 features[encoded_name]=df[col].map(mapping)
                 logging.info(f"Encoded {col} into {encoded_name}.")
