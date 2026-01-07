@@ -51,9 +51,14 @@ def insert_processed_article(processed_data:Dict)->Optional[uuid.UUID]:
         except Exception as e:
             logging.error(f"Failed to insert processed : {e}")
             raise
-def get_processed_articles(limit:int=100)->List[ProcessedArticle]:
+def get_processed_articles_dict(limit: int = None):
     with db.get_db() as session:
-        return session.query(ProcessedArticle).filter(ProcessedArticle.processed_text.isnot(None)).limit(100).all()
+        query = session.query(ProcessedArticle.id, ProcessedArticle.processed_text)
+        if limit:
+            query = query.limit(limit)
+        for row in query.yield_per(1000):
+            yield {"id": row.id, "processed_text": row.processed_text}
+
 
 
         

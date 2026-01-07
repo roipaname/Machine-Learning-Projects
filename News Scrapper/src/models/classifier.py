@@ -183,6 +183,137 @@ class NewsArticleClassifier:
         except Exception as e:
             logger.error(f"Training failed: {e}")
             raise
+    def predict(self,X:csr_matrix)->List[str]:
+        """Predict class labels for samples.
+        
+        Args:
+            X: Feature matrix (n_samples, n_features)
+            
+        Returns:
+            List of predicted class labels (strings)"""
+        
+        if not self.is_trained:
+            raise ValueError("Model must be trained before prediction")
+        if X.shape[1]!=self.feature_dim:
+            raise ValueError(
+                f"Feature dimension mismatch. Expected {self.feature_dim}, got {X.shape[1]}"
+            )
+        try:
+            y_pred_encoded=self.model.predict(X)
+            y_pred=self.label_encoder.inverse_transform(y_pred_encoded)
+            return y_pred.tolist()
+        except Exception as e:
+            logger.error(f"Failed to predict {e}")
+            raise
+    def predict_proba(self, X: csr_matrix) -> np.ndarray:
+        """
+        Predict class probabilities for samples.
+        
+        Args:
+            X: Feature matrix (n_samples, n_features)
+            
+        Returns:
+            Array of shape (n_samples, n_classes) with probabilities
+        """
+        if not self.is_trained:
+            raise ValueError("Model must be trained before prediction")
+        
+        # Check if model supports probability prediction
+        if not hasattr(self.model, 'predict_proba'):
+            # For SVM, use decision_function as proxy
+            if hasattr(self.model, 'decision_function'):
+                decision = self.model.decision_function(X)
+                # Convert to pseudo-probabilities using softmax
+                exp_scores = np.exp(decision - np.max(decision, axis=1, keepdims=True))
+                probas = exp_scores / exp_scores.sum(axis=1, keepdims=True)
+                return probas
+            else:
+                raise AttributeError(
+                    f"{self.classifier_type} does not support probability prediction"
+                )
+        
+        return self.model.predict_proba(X)
+    
+    def predict_with_confidence(
+        self,
+        X: csr_matrix,
+        threshold: float = 0.5
+    ) -> List[Tuple[str, float]]:
+        """
+        Predict with confidence scores.
+        
+        Args:
+            X: Feature matrix (n_samples, n_features)
+            threshold: Minimum confidence for prediction (else return 'uncertain')
+            
+        Returns:
+            List of (predicted_label, confidence) tuples
+        """
+        probas = self.predict_proba(X)
+        max_probas = probas.max(axis=1)
+        predictions = self.predict(X)
+        
+        results = []
+        for pred, conf in zip(predictions, max_probas):
+            if conf >= threshold:
+                results.append((pred, float(conf)))
+            else:
+                results.append(('uncertain', float(conf)))
+        
+        return results
+    def evaluate(self,X:csr_matrix,y_true:List[str])->Dict[str,Any]:
+        """
+        Evaluate model performance on test set.
+        
+        Args:
+            X: Feature matrix
+            y_true: True labels
+            
+        Returns:
+            Dictionary containing evaluation metrics
+        """
+        if not self.is_trained:
+            raise ValueError("Model must be trained before evaluation")
+        
+        y_pred=self.predict(X)
+        y_true_encoded=self.label_encoder.transform(y_true)
+        y_pred_encoded=self.label_encoder.transform(y_pred)
+
+        accuracy=accuracy_score(y_true_encoded,y_pred_encoded)
+
+        precision, recall, f1, support = precision_recall_fscore_support(
+            y_true_encoded, y_pred_encoded, average='weighted'
+        )
+
+        # Per-class metrics
+        class_report = classification_report(
+            y_true_encoded,
+            y_pred_encoded,
+            target_names=self.class_names,
+            output_dict=True
+        )
+        conf_matrix=confusion_matrix(y_true_encoded,y_pred_encoded)
+
+        results = {
+            'accuracy': float(accuracy),
+            'precision': float(precision),
+            'recall': float(recall),
+            'f1_score': float(f1),
+            'classification_report': class_report,
+            'confusion_matrix': conf_matrix.tolist(),
+            'class_names': self.class_names,
+            'num_samples': len(y_true)
+        }
+        
+        logger.success(
+            f"Evaluation complete - Accuracy: {accuracy:.4f}, F1: {f1:.4f}"
+        )
+        
+        return results
+
+
+     
+
         
 
 

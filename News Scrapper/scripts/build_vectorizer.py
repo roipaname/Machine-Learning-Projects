@@ -6,7 +6,7 @@ from pathlib import Path
 def main():
     logger.info("Fetching processed articles...")
 
-    articles = get_processed_articles(limit=50_000)
+    articles = get_processed_articles(limit=200_000)
 
     if not articles:
         raise RuntimeError("No processed articles found")

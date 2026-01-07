@@ -56,9 +56,9 @@ def load_kaggle_dataset(dataset_path: Path) -> pd.DataFrame:
 
 def main():
     df=load_kaggle_dataset(KAGGEL_DATASET)
-    for row in df.itertuples(index=False,name=None):
-        row_dict=dict(zip(df.columns,row))
-        insert_raw_articles(row_dict)
+   # for row in df.itertuples(index=False,name=None):
+      #  row_dict=dict(zip(df.columns,row))
+       # insert_raw_articles(row_dict)
 
 if __name__=="__main__":
     main()
