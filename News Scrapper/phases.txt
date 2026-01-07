@@ -1,0 +1,85 @@
+
+
+## **Phase 1 — Scraping Layer**
+
+**Goal:** Fetch articles from websites and store them in the database.
+
+**Tasks:**
+
+1. **Create a scraper module** (`scraper.py`) using `requests` + `BeautifulSoup` or `newspaper3k`.
+2. **Fetch articles** from multiple sources defined in `sources.yaml`.
+3. **Generate content hash** for deduplication.
+4. **Insert into DB** using your `insert_raw_articles` function.
+5. **Implement rate limiting** with your decorator (`ratelimit`) to avoid being blocked.
+6. **Logging:** Use `loguru` to track success/failures per URL.
+
+**Optional:** Use `trafilatura` for cleaner text extraction if newspaper3k fails.
+
+---
+
+## **Phase 2 — Preprocessing Layer**
+
+**Goal:** Clean, normalize, and prepare text for ML.
+
+**Tasks:**
+
+1. **Text cleaning:** Lowercase, remove punctuation, numbers, URLs (based on your config).
+2. **Tokenization:** Use `nltk` or `spacy` to tokenize text.
+3. **Feature extraction:**
+
+   * TF-IDF vectorization (`scikit-learn`)
+   * Save vectorizer for future inference
+4. **Insert processed articles** using `insert_processed_article`.
+5. **Handle deduplication:** Flag duplicates using similarity thresholds.
+
+---
+
+## **Phase 3 — ML Model Layer**
+
+**Goal:** Train and persist ML models for topic classification.
+
+**Tasks:**
+
+1. Use your `processed_articles` table as training data.
+2. Try multiple models (`logistic_regression`, `naive_bayes`, `svm`, `random_forest`).
+3. Evaluate using `cross_val_score` or `train_test_split`.
+4. Store predictions in `ArticleClassification`.
+5. Save model, vectorizer, and label encoder to disk for production.
+
+---
+
+## **Phase 4 — Pipeline / Orchestration Layer**
+
+**Goal:** Make it automated and modular.
+
+**Tasks:**
+
+1. **Pipeline script** (`pipeline.py`) that:
+
+   * Scrapes → preprocess → classify → stores in DB.
+2. **Scheduler** (optional):
+
+   * Use `APScheduler` or cron to run scraping at intervals.
+3. **Logging & monitoring:**
+
+   * Track number of articles scraped, processed, classified.
+4. **Error handling:**
+
+   * Handle failed inserts, broken URLs, or ML errors gracefully.
+
+---
+
+## **Phase 5 — Optional: API / Frontend**
+
+**Goal:** Serve results and allow querying.
+
+1. **FastAPI / Flask** for serving classified news.
+2. Endpoints for:
+
+   * Latest articles
+   * Articles by topic
+   * Unprocessed articles
+3. Optionally integrate a **search** using PostgreSQL full-text or `pg_trgm`.
+
+---
+

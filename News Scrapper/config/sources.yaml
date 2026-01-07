@@ -1,0 +1,192 @@
+# =============================================================================
+# Minimal News Sources Configuration
+# =============================================================================
+# Each source has a single URL (entry point) and CSS selectors for scraping.
+# =============================================================================
+
+sources:
+  # ---------------------------------------------------------------------------
+  # BBC News
+  # ---------------------------------------------------------------------------
+  - name: "BBC News"
+    url: "https://www.bbc.com/news"
+    selector:
+      article_links: "a.gs-c-promo-heading.gs-o-faux-block-link__overlay-link"
+      title: "h1#main-heading"
+      body: "article div[data-component='text-block'] p"
+      author: "div[class*='Author'] span"
+      date: "time"
+      image: "div[data-component='image-block'] img"
+    rate_limit: 2 # seconds between requests
+
+  # ---------------------------------------------------------------------------
+  # The Guardian
+  # ---------------------------------------------------------------------------
+  - name: "The Guardian"
+    url: "https://www.theguardian.com"
+    selector:
+      article_links: "a[data-link-name='article']"
+      title: "h1"
+      body: ".article-body-commercial-selector p"
+      author: "a[rel='author']"
+      date: "time"
+      image: "picture img"
+    rate_limit: 2
+
+  # ---------------------------------------------------------------------------
+  # Reuters
+  # ---------------------------------------------------------------------------
+  - name: "Reuters"
+    url: "https://www.reuters.com/world"
+    selector:
+      article_links: "a[data-testid='Heading']"
+      title: "h1[data-testid='Heading']"
+      body: "div[class*='article-body'] p"
+      author: "a[data-testid='Author']"
+      date: "time"
+      image: "div[data-testid='MediaContainer'] img"
+    rate_limit: 2.5
+
+  # ---------------------------------------------------------------------------
+  # TechCrunch
+  # ---------------------------------------------------------------------------
+  - name: "TechCrunch"
+    url: "https://techcrunch.com"
+    selector:
+      article_links: "h2.post-block__title a"
+      title: "h1.article__title"
+      body: "div.article-content p"
+      author: "a[rel='author']"
+      date: "time.full-date-time"
+      image: "figure.article__featured-image img"
+    rate_limit: 2
+
+  # ---------------------------------------------------------------------------
+  # The Verge
+  # ---------------------------------------------------------------------------
+  - name: "The Verge"
+    url: "https://www.theverge.com/tech"
+    selector:
+      article_links: "h2 a"
+      title: "h1"
+      body: "div[class*='article-body'] p"
+      author: "a[class*='author-name']"
+      date: "time"
+      image: "figure img"
+    rate_limit: 2
+
+  # =============================================================================
+  # Additional News Sources
+  # =============================================================================
+
+  # ---------------------------------------------------------------------------
+  # Al Jazeera English
+  # ---------------------------------------------------------------------------
+  - name: "Al Jazeera"
+    url: "https://www.aljazeera.com/news/"
+    selector:
+      article_links: "a.u-clickable-card__link"
+      title: "h1"
+      body: "div.wysiwyg-content p"
+      author: "span[itemprop='name']"
+      date: "time"
+      image: "figure img"
+    rate_limit: 2.5
+
+  # ---------------------------------------------------------------------------
+  # Associated Press (AP News)
+  # ---------------------------------------------------------------------------
+  - name: "AP News"
+    url: "https://apnews.com"
+    selector:
+      article_links: "a[data-key='card-headline']"
+      title: "h1"
+      body: "div[data-key='article'] p"
+      author: "span[data-key='byline']"
+      date: "span[data-key='timestamp']"
+      image: "figure img"
+    rate_limit: 2.5
+
+  # ---------------------------------------------------------------------------
+  # CNBC
+  # ---------------------------------------------------------------------------
+  - name: "CNBC"
+    url: "https://www.cnbc.com/world/"
+    selector:
+      article_links: "a.Card-title"
+      title: "h1"
+      body: "div.group p"
+      author: "a.Byline-author"
+      date: "time"
+      image: "div.InlineImage-container img"
+    rate_limit: 2
+
+  # ---------------------------------------------------------------------------
+  # Bloomberg (partial – headlines & body work well)
+  # ---------------------------------------------------------------------------
+  - name: "Bloomberg"
+    url: "https://www.bloomberg.com"
+    selector:
+      article_links: "a[data-tracking-label='headline']"
+      title: "h1"
+      body: "div[class*='body-content'] p"
+      author: "a[data-tracking-label='author']"
+      date: "time"
+      image: "figure img"
+    rate_limit: 3
+
+  # ---------------------------------------------------------------------------
+  # CNN (text-heavy articles)
+  # ---------------------------------------------------------------------------
+  - name: "CNN"
+    url: "https://edition.cnn.com/world"
+    selector:
+      article_links: "h3.cd__headline a"
+      title: "h1"
+      body: "div.article__content p"
+      author: "span.byline__name"
+      date: "meta[itemprop='datePublished']"
+      image: "figure img"
+    rate_limit: 2.5
+
+  # ---------------------------------------------------------------------------
+  # NPR
+  # ---------------------------------------------------------------------------
+  - name: "NPR"
+    url: "https://www.npr.org/sections/news/"
+    selector:
+      article_links: "article h2 a"
+      title: "h1"
+      body: "div#storytext p"
+      author: "span.byline__name"
+      date: "time"
+      image: "figure img"
+    rate_limit: 2
+
+  # ---------------------------------------------------------------------------
+  # Wired
+  # ---------------------------------------------------------------------------
+  - name: "Wired"
+    url: "https://www.wired.com/category/business/"
+    selector:
+      article_links: "a.SummaryItemHedLink"
+      title: "h1"
+      body: "div[class*='body__inner'] p"
+      author: "a[data-testid='BylineName']"
+      date: "time"
+      image: "figure img"
+    rate_limit: 2.5
+
+  # ---------------------------------------------------------------------------
+  # Hacker News (links only – external articles)
+  # ---------------------------------------------------------------------------
+  - name: "Hacker News"
+    url: "https://news.ycombinator.com"
+    selector:
+      article_links: "a.storylink"
+      title: "title"
+      body: "body"
+      author: ""
+      date: ""
+      image: ""
+    rate_limit: 1.5

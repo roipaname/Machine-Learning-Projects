@@ -1,0 +1,64 @@
+news-classifier/
+│
+├── config/
+│   ├── __init__.py
+│   ├── settings.py          # All configuration
+│   └── sources.yaml         # News sources to scrape
+│
+├── src/
+│   ├── __init__.py
+│   │
+│   ├── scraper/
+│   │   ├── __init__.py
+│   │   ├── base_scraper.py  # Abstract base class
+│   │   ├── article_parser.py
+│   │   └── rate_limiter.py
+│   │
+│   ├── database/
+│   │   ├── __init__.py
+│   │   ├── models.py        # SQLAlchemy models
+│   │   ├── connection.py
+│   │   └── operations.py    # CRUD operations
+│   │
+│   ├── preprocessing/
+│   │   ├── __init__.py
+│   │   ├── cleaner.py       # Text cleaning
+│   │   ├── normalizer.py    # Tokenization, lemmatization
+│   │   └── deduplicator.py
+│   │
+│   ├── features/
+│   │   ├── __init__.py
+│   │   └── tfidf_vectorizer.py
+│   │
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── classifier.py
+│   │   └── evaluator.py
+│   │
+│   └── utils/
+│       ├── __init__.py
+│       ├── logger.py
+│       └── validators.py
+│
+├── scripts/
+│   ├── run_scraper.py
+│   ├── run_preprocessing.py
+│   ├── train_model.py
+│   └── classify_articles.py
+│
+├── tests/
+│   ├── test_scraper.py
+│   ├── test_preprocessing.py
+│   └── test_classifier.py
+│
+├── data/
+│   ├── models/              # Saved ML models
+│   └── logs/
+│
+├── notebooks/
+│   └── eda.ipynb            # Exploratory analysis
+│
+├── requirements.txt
+├── .env.example
+├── README.md
+└── setup.py

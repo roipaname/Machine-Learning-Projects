@@ -1,0 +1,53 @@
+# ================================
+# HTTP Requests
+# ================================
+requests                # Stable library to make HTTP requests for scraping
+
+# ================================
+# HTML Parsing
+# ================================
+beautifulsoup4          # Parse HTML pages easily, DOM navigation
+
+# ================================
+# Article Extraction
+# ================================
+trafilatura             # Extract clean text from web articles reliably
+
+# ================================
+# Database / ORM
+# ================================
+sqlalchemy              # Object-Relational Mapping for PostgreSQL
+psycopg2-binary         # PostgreSQL driver for SQLAlchemy
+
+# ================================
+# NLP / Text Processing
+# ================================
+nltk                    # Tokenization, stopwords, text preprocessing utilities
+spacy                   # Industrial-strength NLP library (lemmatization, parsing)
+
+# ================================
+# ML / Feature Extraction
+# ================================
+scikit-learn            # TF-IDF vectorization, classifiers (Logistic Regression, SVM, etc.)
+
+# ================================
+# Rate Limiting
+# ================================
+ratelimit               # Decorator-based rate limiting for scraper
+
+# ================================
+# Logging
+# ================================
+loguru                  # Structured, colorized, production-ready logging
+
+# ================================
+# Environment / Config
+# ================================
+python-dotenv           # Load environment variables from .env files
+
+# ================================
+# Optional / Future Enhancements
+# ================================
+# uvicorn                 # For future API deployment (FastAPI)
+# fastapi                  # Optional REST API for classifying articles
+# alembic                  # DB migrations if PostgreSQL schema evolves
