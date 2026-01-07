@@ -13,7 +13,7 @@ class PreprocessingPipeline:
         self.normalizer=TextNormalizer()
 
 
-    def process(self, title: str, body: str,url:str) -> Dict:
+    def process(self, title: str, body: str,category:str,url:str=None) -> Dict:
         """Process article title and body."""
         try:
             # Clean
@@ -36,7 +36,7 @@ class PreprocessingPipeline:
                 'processed_text': processed_text,
                 'token_count': len(all_tokens),
                 'language': 'en',  # Can add language detection here
-                'category':extract_category(url)
+                'category':category if category else extract_category(url)
             }
         except Exception as e:
             logging.error(f"Preprocessing failed: {e}")

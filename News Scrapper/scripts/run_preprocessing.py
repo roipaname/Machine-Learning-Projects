@@ -15,7 +15,7 @@ def main(batch_size:int=100):
         logging.info(f"Processing {len(raw_articles)} articles")
 
         for article in raw_articles:
-            result=pipeline.process(article.title,article.body,article.url)
+            result=pipeline.process(article.title,article.body,article.category,article.url)
             if not result:
                 logging.warning(f"Failed to process {article.id}")
                 continue
