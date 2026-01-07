@@ -311,6 +311,417 @@ class NewsArticleClassifier:
         
         return results
 
+    def _cross_validate(
+        self,
+        X: csr_matrix,
+        y: np.ndarray
+    ) -> Dict[str, float]:
+        """
+        Perform cross-validation.
+        
+        Args:
+            X: Feature matrix
+            y: Encoded labels
+            
+        Returns:
+            Dictionary with mean and std of CV scores
+        """
+        logger.debug(f"Running {CV_FOLDS}-fold cross-validation...")
+        
+        try:
+            scores = cross_val_score(
+                self.model,
+                X,
+                y,
+                cv=CV_FOLDS,
+                scoring='f1_weighted',
+                n_jobs=-1
+            )
+            
+            return {
+                'mean': float(scores.mean()),
+                'std': float(scores.std()),
+                'scores': scores.tolist()
+            }
+            
+        except Exception as e:
+            logger.warning(f"Cross-validation failed: {e}")
+            return {'mean': 0.0, 'std': 0.0, 'scores': []}
+    
+    def hyperparameter_tuning(
+        self,
+        X: csr_matrix,
+        y: List[str],
+        cv: int = 3
+    ) -> Dict[str, Any]:
+        """
+        Perform grid search for hyperparameter tuning.
+        
+        Args:
+            X: Feature matrix
+            y: Target labels
+            cv: Number of cross-validation folds
+            
+        Returns:
+            Dictionary with best parameters and scores
+        """
+        logger.info(f"Starting hyperparameter tuning for {self.classifier_type}...")
+        
+        # Encode labels
+        y_encoded = self.label_encoder.fit_transform(y)
+        
+        # Get parameter grid
+        param_grid = self.config['grid_params']
+        
+        # Initialize GridSearchCV
+        grid_search = GridSearchCV(
+            estimator=self.config['class'](**self.config['params']),
+            param_grid=param_grid,
+            cv=cv,
+            scoring='f1_weighted',
+            n_jobs=-1,
+            verbose=1
+        )
+        
+        # Perform grid search
+        grid_search.fit(X, y_encoded)
+        
+        # Update model with best parameters
+        self.model = grid_search.best_estimator_
+        self.is_trained = True
+        
+        results = {
+            'best_params': grid_search.best_params_,
+            'best_score': float(grid_search.best_score_),
+            'cv_results': grid_search.cv_results_
+        }
+        
+        logger.success(
+            f"Best parameters: {grid_search.best_params_} "
+            f"(score: {grid_search.best_score_:.4f})"
+        )
+        
+        return results
+    
+    def get_feature_importance(self, top_n: int = 20) -> Dict[str, List[float]]:
+        """
+        Get feature importance scores (model-specific).
+        
+        Args:
+            top_n: Number of top features per class
+            
+        Returns:
+            Dictionary mapping class names to feature importance scores
+        """
+        if not self.is_trained:
+            raise ValueError("Model must be trained first")
+        
+        # Only certain models have interpretable coefficients
+        if not hasattr(self.model, 'coef_'):
+            logger.warning(f"{self.classifier_type} does not have interpretable coefficients")
+            return {}
+        
+        coef = self.model.coef_
+        
+        # Get top features per class
+        importance = {}
+        for idx, class_name in enumerate(self.class_names):
+            class_coef = coef[idx] if len(coef.shape) > 1 else coef
+            top_indices = np.argsort(np.abs(class_coef))[-top_n:][::-1]
+            importance[class_name] = top_indices.tolist()
+        
+        return importance
+    
+    def save(self, filepath: Optional[Path] = None) -> Path:
+        """
+        Save trained model to disk.
+        
+        Args:
+            filepath: Path to save model (uses default if None)
+            
+        Returns:
+            Path where model was saved
+        """
+        if not self.is_trained:
+            raise ValueError("Cannot save untrained model")
+        
+        save_path = filepath or MODEL_SAVE_PATH
+        save_path = Path(save_path)
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            # Save model and metadata
+            model_data = {
+                'model': self.model,
+                'label_encoder': self.label_encoder,
+                'classifier_type': self.classifier_type,
+                'config': self.config,
+                'metadata': {
+                    'training_date': self.training_date.isoformat(),
+                    'training_samples': self.training_samples,
+                    'num_classes': self.num_classes,
+                    'class_names': self.class_names,
+                    'feature_dim': self.feature_dim,
+                    'model_version': MODEL_VERSION
+                }
+            }
+            
+            with open(save_path, 'wb') as f:
+                pickle.dump(model_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+            
+            logger.success(f"Model saved to {save_path}")
+            return save_path
+            
+        except Exception as e:
+            logger.error(f"Error saving model: {e}")
+            raise
+    
+    @classmethod
+    def load(cls, filepath: Optional[Path] = None) -> 'NewsArticleClassifier':
+        """
+        Load trained model from disk.
+        
+        Args:
+            filepath: Path to saved model (uses default if None)
+            
+        Returns:
+            Loaded NewsArticleClassifier instance
+        """
+        load_path = filepath or MODEL_SAVE_PATH
+        load_path = Path(load_path)
+        
+        if not load_path.exists():
+            raise FileNotFoundError(f"Model not found at {load_path}")
+        
+        try:
+            with open(load_path, 'rb') as f:
+                model_data = pickle.load(f)
+            
+            # Reconstruct classifier
+            classifier = cls(classifier_type=model_data['classifier_type'])
+            classifier.model = model_data['model']
+            classifier.label_encoder = model_data['label_encoder']
+            classifier.config = model_data['config']
+            
+            # Restore metadata
+            metadata = model_data['metadata']
+            classifier.is_trained = True
+            classifier.training_date = datetime.fromisoformat(metadata['training_date'])
+            classifier.training_samples = metadata['training_samples']
+            classifier.num_classes = metadata['num_classes']
+            classifier.class_names = metadata['class_names']
+            classifier.feature_dim = metadata['feature_dim']
+            
+            logger.success(
+                f"Model loaded from {load_path}. "
+                f"Trained on {metadata['training_date'][:10]}"
+            )
+            
+            return classifier
+            
+        except Exception as e:
+            logger.error(f"Error loading model: {e}")
+            raise
+    
+    def __repr__(self) -> str:
+        """String representation of classifier."""
+        status = "trained" if self.is_trained else "not trained"
+        return (
+            f"NewsArticleClassifier("
+            f"type={self.classifier_type}, "
+            f"status={status}, "
+            f"classes={self.num_classes})"
+        )
+
+
+def train_classifier(
+    X_train: csr_matrix,
+    y_train: List[str],
+    X_test: csr_matrix,
+    y_test: List[str],
+    classifier_type: str = DEFAULT_CLASSIFIER,
+    tune_hyperparams: bool = False
+) -> Tuple[NewsArticleClassifier, Dict]:
+    """
+    Train a classifier and evaluate on test set.
+    
+    Args:
+        X_train: Training features
+        y_train: Training labels
+        X_test: Test features
+        y_test: Test labels
+        classifier_type: Type of classifier to use
+        tune_hyperparams: Whether to perform hyperparameter tuning
+        
+    Returns:
+        Tuple of (trained classifier, evaluation results)
+    """
+    logger.info(f"Training {classifier_type} classifier...")
+    
+    # Initialize classifier
+    classifier = NewsArticleClassifier(classifier_type=classifier_type)
+    
+    # Hyperparameter tuning if requested
+    if tune_hyperparams:
+        tuning_results = classifier.hyperparameter_tuning(X_train, y_train)
+        logger.info(f"Best parameters: {tuning_results['best_params']}")
+    else:
+        # Standard training
+        classifier.fit(X_train, y_train)
+    
+    # Evaluate on test set
+    results = classifier.evaluate(X_test, y_test)
+    
+    return classifier, results
+
+
+def evaluate_classifier(
+    classifier: NewsArticleClassifier,
+    X_test: csr_matrix,
+    y_test: List[str]
+) -> Dict:
+    """
+    Evaluate a trained classifier.
+    
+    Args:
+        classifier: Trained classifier
+        X_test: Test features
+        y_test: Test labels
+        
+    Returns:
+        Dictionary of evaluation metrics
+    """
+    return classifier.evaluate(X_test, y_test)
+
+
+def compare_classifiers(
+    X_train: csr_matrix,
+    y_train: List[str],
+    X_test: csr_matrix,
+    y_test: List[str],
+    classifiers: Optional[List[str]] = None
+) -> Dict[str, Dict]:
+    """
+    Train and compare multiple classifiers.
+    
+    Args:
+        X_train: Training features
+        y_train: Training labels
+        X_test: Test features
+        y_test: Test labels
+        classifiers: List of classifier types to compare (None = all)
+        
+    Returns:
+        Dictionary mapping classifier names to evaluation results
+    """
+    if classifiers is None:
+        classifiers = list(NewsArticleClassifier.CLASSIFIERS.keys())
+    
+    logger.info(f"Comparing {len(classifiers)} classifiers...")
+    
+    results = {}
+    
+    for clf_type in classifiers:
+        try:
+            logger.info(f"\n{'='*60}")
+            logger.info(f"Training {clf_type}")
+            logger.info(f"{'='*60}")
+            
+            clf, eval_results = train_classifier(
+                X_train, y_train,
+                X_test, y_test,
+                classifier_type=clf_type
+            )
+            
+            results[clf_type] = {
+                'classifier': clf,
+                'metrics': eval_results
+            }
+            
+            logger.info(
+                f"{clf_type} - Accuracy: {eval_results['accuracy']:.4f}, "
+                f"F1: {eval_results['f1_score']:.4f}"
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to train {clf_type}: {e}")
+            results[clf_type] = {'error': str(e)}
+    
+    # Print comparison summary
+    logger.info(f"\n{'='*60}")
+    logger.info("COMPARISON SUMMARY")
+    logger.info(f"{'='*60}")
+    
+    for clf_type, result in results.items():
+        if 'metrics' in result:
+            metrics = result['metrics']
+            logger.info(
+                f"{clf_type:20s} | "
+                f"Acc: {metrics['accuracy']:.4f} | "
+                f"F1: {metrics['f1_score']:.4f} | "
+                f"Prec: {metrics['precision']:.4f} | "
+                f"Rec: {metrics['recall']:.4f}"
+            )
+    
+    return results
+
+
+# =============================================================================
+# Example Usage
+# =============================================================================
+
+if __name__ == '__main__':
+    """
+    Example usage and testing of classifier.
+    """
+    from sklearn.datasets import fetch_20newsgroups
+    from sklearn.model_selection import train_test_split
+    from src.features.tfidf_vectorizer import TFIDFFeatureExtractor
+    
+    logger.info("Loading sample data...")
+    
+    # Load subset of 20newsgroups dataset
+    categories = ['sci.med', 'sci.space', 'rec.sport.baseball', 'comp.graphics']
+    newsgroups = fetch_20newsgroups(
+        subset='all',
+        categories=categories,
+        remove=('headers', 'footers', 'quotes')
+    )
+    
+    X = newsgroups.data
+    y = [categories[i] for i in newsgroups.target]
+    
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+    
+    # Extract features
+    logger.info("Extracting TF-IDF features...")
+    extractor = TFIDFFeatureExtractor(max_features=1000)
+    X_train_tfidf = extractor.fit_transform(X_train)
+    X_test_tfidf = extractor.transform(X_test)
+    
+    # Train single classifier
+    logger.info("\nTraining single classifier...")
+    clf, results = train_classifier(
+        X_train_tfidf, y_train,
+        X_test_tfidf, y_test,
+        classifier_type='logistic_regression'
+    )
+    
+    logger.info(f"\nAccuracy: {results['accuracy']:.4f}")
+    logger.info(f"F1 Score: {results['f1_score']:.4f}")
+    
+    # Compare classifiers
+    logger.info("\n\nComparing multiple classifiers...")
+    comparison = compare_classifiers(
+        X_train_tfidf, y_train,
+        X_test_tfidf, y_test,
+        classifiers=['logistic_regression', 'naive_bayes']
+    )
+    
+    logger.info("Testing complete!")
 
      
 
