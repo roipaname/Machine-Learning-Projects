@@ -11,8 +11,9 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from loguru import logger
+import logging as logger
 
+logger.basicConfig(level=logger.INFO)
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
