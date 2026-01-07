@@ -3,6 +3,7 @@ from config.settings import KAGGEL_DATASET
 import logging
 logging.basicConfig(level=logging.INFO)
 from  typing import List
+import ast
 if not KAGGEL_DATASET.exists():
     raise FileNotFoundError(f"Dataset not found at {KAGGLE_DATASET}")
 
@@ -18,7 +19,7 @@ df['title']=df['title'].fillna("").astype(str)
 df['body']=df['text'].fillna("").astype(str)
 df['url']=df['url'].astype(str)
 df['source']="kaggle"
-df['category']=df['tag'].astype(List)
+df['category']=df['tag'].apply(lambda x: ast.literal_eval(x) if pd.notna(x) else [])
 print(df['category'][0])
 df=df.drop(columns=['text','authors','timestamp'])
 
