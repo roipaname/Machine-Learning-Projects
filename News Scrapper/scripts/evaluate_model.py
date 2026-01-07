@@ -83,7 +83,7 @@ def main():
     )
     
     plt.show()
-    logger.success("Evaluation complete!")
+    logger.info("Evaluation complete!")
 
 
 if __name__ == '__main__':

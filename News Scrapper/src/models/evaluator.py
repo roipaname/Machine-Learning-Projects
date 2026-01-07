@@ -32,7 +32,7 @@ from sklearn.preprocessing import label_binarize
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from loguru import logger
+import logging as logger
 
 from config.settings import DATA_DIR
 
@@ -853,5 +853,5 @@ if __name__ == '__main__':
         model_name="LogisticRegression"
     )
     
-    logger.success("Evaluator testing complete!")
+    logger.info("Evaluator testing complete!")
     plt.show()
