@@ -128,7 +128,7 @@ class NewsArticleClassifier:
 
         
         classifier_class=self.config['class']
-        self.model=classifier_class(**self.config['param'])
+        self.model=classifier_class(**self.config['params'])
 
         self.label_encoder=LabelEncoder()
         #Training metadata

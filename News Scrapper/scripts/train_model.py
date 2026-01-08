@@ -80,7 +80,7 @@ def setup_logging(verbose: bool = False):
 
 
 def load_training_data(
-    min_samples_per_class: int = 7,
+    min_samples_per_class: int = 12,
     max_samples: Optional[int] = None,
     balance_classes: bool = False
 ) -> Tuple[List[str], List[str], List[int]]:
@@ -135,7 +135,7 @@ def load_training_data(
         if category:
             article_ids.append(article_id)
             documents.append(text)
-            labels.append(category)
+            labels.append(category.split("|")[0])
     
     logger.info(f"Mapped {len(documents)} articles to categories")
     
