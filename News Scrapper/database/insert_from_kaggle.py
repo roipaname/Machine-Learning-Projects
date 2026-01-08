@@ -41,11 +41,12 @@ def load_kaggle_dataset(dataset_path: Path) -> pd.DataFrame:
     
     # 6️⃣ Convert tags column to a joined string
     df['category'] = df['tags'].apply(
-        lambda x: "|".join(ast.literal_eval(x)) if pd.notna(x) else ""
+        lambda x: ast.literal_eval(x)[0] if pd.notna(x) else ""
     )
 
     # 7️⃣ Drop unneeded columns
     df = df.drop(columns=['text', 'authors', 'timestamp', 'tags'])
+    print(f"unique {df['category'].nunique()}")
 
     # 8️⃣ Optional prints
     print("\nProcessed dtypes:\n", df.dtypes)

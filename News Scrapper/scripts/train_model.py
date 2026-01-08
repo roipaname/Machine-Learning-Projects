@@ -39,7 +39,7 @@ from config.settings import (
     MODELS_DIR,
     DATA_DIR
 )
-from database.connection import get_db
+from database.connection import DatabaseConnection
 from database.models import ProcessedArticle, SourceArticle
 from src.features.tfidf_vectorizer import TFIDFFeatureExtractor, extract_top_features
 from src.models.classifier import (
@@ -48,7 +48,7 @@ from src.models.classifier import (
     compare_classifiers
 )
 from src.models.evaluator import ModelEvaluator
-
+db=DatabaseConnection()
 
 def setup_logging(verbose: bool = False):
     """Configure logging for training script."""
@@ -80,7 +80,7 @@ def setup_logging(verbose: bool = False):
 
 
 def load_training_data(
-    min_samples_per_class: int = 10,
+    min_samples_per_class: int = 7,
     max_samples: Optional[int] = None,
     balance_classes: bool = False
 ) -> Tuple[List[str], List[str], List[int]]:
@@ -97,13 +97,14 @@ def load_training_data(
     """
     logger.info("Loading training data from database...")
     
-    with get_db() as session:
+    with db.get_db() as session:
         # Query processed articles with their raw article info
         query = session.query(
             ProcessedArticle.id,
             ProcessedArticle.processed_text,
             SourceArticle.source,
-            SourceArticle.url
+            SourceArticle.url,
+            ProcessedArticle.category
         ).join(
             SourceArticle,
             ProcessedArticle.source_article_id == SourceArticle.id
@@ -125,12 +126,11 @@ def load_training_data(
     documents = []
     labels = []
     
-    # Map sources to categories (simplified - you may need more sophisticated mapping)
-    source_to_category = _map_sources_to_categories()
+   
     
-    for article_id, text, source, url in results:
+    for article_id, text, source, url,category in results:
         # Infer category from URL or source
-        category = _infer_category(url, source, source_to_category)
+        
         
         if category:
             article_ids.append(article_id)
