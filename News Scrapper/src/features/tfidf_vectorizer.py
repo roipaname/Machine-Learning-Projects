@@ -84,9 +84,9 @@ class TFIDFFeatureExtractor:
     def _create_vectorizer(self) -> TfidfVectorizer:
         """Create configured TfidfVectorizer instance."""
         return TfidfVectorizer(
-            max_features=100,#self.max_features,
-            min_df=1,#self.min_df,
-            max_df=1.0,#self.max_df,
+            max_features=self.max_features,
+            min_df=self.min_df,
+            max_df=self.max_df,
             ngram_range=self.ngram_range,
             use_idf=self.use_idf,
             sublinear_tf=self.sublinear_tf,
