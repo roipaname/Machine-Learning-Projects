@@ -305,7 +305,7 @@ class NewsArticleClassifier:
             'num_samples': len(y_true)
         }
         
-        logger.success(
+        logger.info(
             f"Evaluation complete - Accuracy: {accuracy:.4f}, F1: {f1:.4f}"
         )
         
@@ -396,7 +396,7 @@ class NewsArticleClassifier:
             'cv_results': grid_search.cv_results_
         }
         
-        logger.success(
+        logger.info(
             f"Best parameters: {grid_search.best_params_} "
             f"(score: {grid_search.best_score_:.4f})"
         )
@@ -469,7 +469,7 @@ class NewsArticleClassifier:
             with open(save_path, 'wb') as f:
                 pickle.dump(model_data, f, protocol=pickle.HIGHEST_PROTOCOL)
             
-            logger.success(f"Model saved to {save_path}")
+            logger.info(f"Model saved to {save_path}")
             return save_path
             
         except Exception as e:
@@ -512,7 +512,7 @@ class NewsArticleClassifier:
             classifier.class_names = metadata['class_names']
             classifier.feature_dim = metadata['feature_dim']
             
-            logger.success(
+            logger.info(
                 f"Model loaded from {load_path}. "
                 f"Trained on {metadata['training_date'][:10]}"
             )
