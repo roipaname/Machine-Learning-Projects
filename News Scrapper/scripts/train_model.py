@@ -676,6 +676,7 @@ Examples:
         
         # Step 5: Save metadata
         if not args.no_save:
+            
             logger.info("\n[Step 5/5] Saving training metadata...")
             save_training_metadata(
                 vectorizer,
