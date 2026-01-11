@@ -1,0 +1,5 @@
+mongod --dbpath ~/mongodb-data
+mongosh
+use x_sentiment
+
+tables source_tweet processed_tweet sentiment_data
