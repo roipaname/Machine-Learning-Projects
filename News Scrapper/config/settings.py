@@ -18,7 +18,9 @@ load_dotenv()
 # ============================================================================
 
 # Project root directory
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve()
+while not (BASE_DIR / ".env").exists():
+    BASE_DIR = BASE_DIR.parent
 
 # Data directories
 DATA_DIR = BASE_DIR / 'data'
