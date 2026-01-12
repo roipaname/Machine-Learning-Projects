@@ -10,7 +10,7 @@ class DatabaseConnection:
     def __init__(self,uri:str=MONGODBURL,db_name:str=DB_BNAME):
         self.uri=uri
         self.db_name=db_name
-        self.client:None
+        self.client=None
         self.db=None
         self.connect()
         
@@ -30,11 +30,11 @@ class DatabaseConnection:
             self.client.close()
             logger.info("MongoDb connection closed")
     def get_collection(self,name:str)->Collection:
-        if not self.db:
+        if self.db is None:
             self.connect()
         return self.db[name]
     def get_collection_names(self) -> List[str]:
-        if not self.db:
+        if self.db is None:
             self.connect()
         return self.db.list_collection_names()
     
@@ -77,8 +77,7 @@ class DatabaseConnection:
 if __name__ == "__main__":
     """
     Basic smoke test for DatabaseConnection.
-    Run with:
-        python path/to/database.py
+    
     """
 
     TEST_COLLECTION = "source_tweet"
