@@ -35,6 +35,9 @@ import seaborn as sns
 import logging as logger
 
 from config.settings import DATA_DIR
+import matplotlib.pyplot as plt
+
+plt.rcParams["font.family"] = "DejaVu Sans"
 
 
 class ModelEvaluator:
@@ -218,7 +221,7 @@ class ModelEvaluator:
             filename = f"confusion_matrix_{model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
             save_path = self.output_dir / filename
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.success(f"Confusion matrix saved to {save_path}")
+            logger.info(f"Confusion matrix saved to {save_path}")
         
         return fig
     
@@ -259,7 +262,7 @@ class ModelEvaluator:
             cv=cv,
             train_sizes=train_sizes,
             scoring='f1_weighted',
-            n_jobs=-1,
+            n_jobs=1,
             verbose=0
         )
         
@@ -305,7 +308,7 @@ class ModelEvaluator:
             filename = f"learning_curves_{model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
             save_path = self.output_dir / filename
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.success(f"Learning curves saved to {save_path}")
+            logger.info(f"Learning curves saved to {save_path}")
         
         return fig
     
@@ -372,7 +375,7 @@ class ModelEvaluator:
             filename = f"roc_curves_{model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
             save_path = self.output_dir / filename
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.success(f"ROC curves saved to {save_path}")
+            logger.info(f"ROC curves saved to {save_path}")
         
         return fig
     
@@ -444,7 +447,7 @@ class ModelEvaluator:
             filename = f"precision_recall_{model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
             save_path = self.output_dir / filename
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.success(f"Precision/recall plot saved to {save_path}")
+            logger.info(f"Precision/recall plot saved to {save_path}")
         
         return fig
     
@@ -530,7 +533,7 @@ class ModelEvaluator:
             filename = f"model_comparison_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
             save_path = self.output_dir / filename
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.success(f"Model comparison saved to {save_path}")
+            logger.info(f"Model comparison saved to {save_path}")
         
         return fig
     
@@ -656,7 +659,7 @@ class ModelEvaluator:
             with open(save_path, 'w', encoding='utf-8') as f:
                 json.dump(report, f, indent=2, ensure_ascii=False)
             
-            logger.success(f"Evaluation report saved to {save_path}")
+            logger.info(f"Evaluation report saved to {save_path}")
             
         except Exception as e:
             logger.error(f"Failed to save report: {e}")
@@ -696,7 +699,7 @@ def generate_classification_report(
         output_file.parent.mkdir(parents=True, exist_ok=True)
         with open(output_file, 'w') as f:
             f.write(report)
-        logger.success(f"Classification report saved to {output_file}")
+        logger.info(f"Classification report saved to {output_file}")
     
     return report
 

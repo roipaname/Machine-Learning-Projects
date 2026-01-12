@@ -74,3 +74,54 @@ class DatabaseConnection:
         col.create_index(field, unique=unique)
     
 
+if __name__ == "__main__":
+    """
+    Basic smoke test for DatabaseConnection.
+    Run with:
+        python path/to/database.py
+    """
+
+    TEST_COLLECTION = "source_tweet"
+
+    db = None
+    try:
+        db = DatabaseConnection()
+
+        # 1. Show collections
+        collections = db.get_collection_names()
+        logger.info(f"Existing collections: {collections}")
+
+        # 2. Insert one document
+        doc = {
+            "name": "test_doc",
+            "status": "ok"
+        }
+        result = db.insert_one(TEST_COLLECTION, doc)
+        logger.info(f"Inserted document id: {result.inserted_id}")
+
+        # 3. Find it back
+        found = db.find_one(TEST_COLLECTION, {"name": "test_doc"})
+        logger.info(f"Found document: {found}")
+
+        # 4. Count documents
+        count = db.count(TEST_COLLECTION)
+        logger.info(f"Document count in '{TEST_COLLECTION}': {count}")
+
+        # 5. Update document
+        db.update_one(
+            TEST_COLLECTION,
+            {"name": "test_doc"},
+            {"status": "updated"}
+        )
+
+        updated = db.find_one(TEST_COLLECTION, {"name": "test_doc"})
+        logger.info(f"Updated document: {updated}")
+
+        logger.success("DatabaseConnection smoke test passed ✅")
+
+    except Exception as e:
+        logger.exception("DatabaseConnection smoke test failed ❌")
+
+    finally:
+        if db:
+            db.close()
