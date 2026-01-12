@@ -71,7 +71,7 @@ class DatabaseConnection:
     # ------------------------------------------------------------------
     def create_index(self, collection: str, field: str, unique=False):
         col = self.get_collection(collection)
-        col.create_index(field, unique=unique)
+        col.create_index(field, unique=unique,partialFilterExpression={"content_hash": {"$exists": True}})
     
 
 if __name__ == "__main__":
