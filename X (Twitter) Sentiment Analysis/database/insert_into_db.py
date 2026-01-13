@@ -102,3 +102,4 @@ logger.success("Finished inserting into DB")
 # Count number of positive tweets
 positive_count = db.count("source_tweet", {"sentiment": "Neutral"})
 print(f"Number of neutral tweets: {positive_count}")
+print(db.find_one({"sentiment":"Poistive"}))
