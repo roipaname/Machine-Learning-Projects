@@ -51,15 +51,19 @@ class DatabaseConnection:
     def find_many(
             self,
             collection:str,
-            query:Dict=None,
+            query:Optional[Dict]=None,
+            batch_size:int=1000,
             limit:int=0,
-            projection:Dict=None
-    ):
+            projection:Optional[Dict]=None
+    )->List[Dict]:
         col=self.get_collection(collection)
-        cursor=col.find(query or {},projection)
-        if limit:
-            cursor.limit(limit)
-        return list(cursor)
+        cursor=col.find(query or {},projection).batch_size(batch_size)
+        if limit and limit>0:
+            cursor=cursor.limit(limit)
+        results:List[Dict]=[]
+        for doc in cursor:
+            results.append(doc)
+        return results
     def count(self, collection: str, query: Dict = None) -> int:
         col = self.get_collection(collection)
         return col.count_documents(query or {})

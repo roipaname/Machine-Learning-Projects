@@ -22,7 +22,7 @@ class TextNormalizer:
     def __init__(self,language:str='english'):
         self.langauage=language
         self.stop_words=set(stopwords.words(language))
-        self.lemmatizer=word_tokenize()
+        self.lemmatizer=WordNetLemmatizer()
 
         self.custom_stopwords={
             "im", "ive", "id", "dont", "cant", "wont",
