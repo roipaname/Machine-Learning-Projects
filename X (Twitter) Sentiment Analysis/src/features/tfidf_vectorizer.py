@@ -275,7 +275,7 @@ class TFIDFVectorizer:
             raise
     
     @classmethod
-    def load(cls, filepath: Optional[Path] = None) -> 'TFIDFFeatureExtractor':
+    def load(cls, filepath: Optional[Path] = None) -> 'TFIDFVectorizer':
         """
         Load fitted vectorizer from disk.
         
@@ -355,7 +355,7 @@ class TFIDFVectorizer:
 # =============================================================================
 
 def save_vectorizer(
-    extractor: TFIDFFeatureExtractor,
+    extractor: TFIDFVectorizer,
     filepath: Optional[Path] = None
 ) -> Path:
     """
@@ -371,7 +371,7 @@ def save_vectorizer(
     return extractor.save(filepath)
 
 
-def load_vectorizer(filepath: Optional[Path] = None) -> TFIDFFeatureExtractor:
+def load_vectorizer(filepath: Optional[Path] = None) -> TFIDFVectorizer:
     """
     Convenience function to load vectorizer.
     
@@ -381,7 +381,7 @@ def load_vectorizer(filepath: Optional[Path] = None) -> TFIDFFeatureExtractor:
     Returns:
         Loaded TFIDFFeatureExtractor instance
     """
-    return TFIDFFeatureExtractor.load(filepath)
+    return TFIDFVectorizer.load(filepath)
 
 
 def extract_top_features(
@@ -408,7 +408,7 @@ def extract_top_features(
     logger.info(f"Extracting top {top_n} features per class...")
     
     # Fit vectorizer on all documents
-    extractor = TFIDFFeatureExtractor()
+    extractor = TFIDFVectorizer()
     tfidf_matrix = extractor.fit_transform(documents)
     feature_names = extractor.get_feature_names()
     
@@ -466,7 +466,7 @@ def analyze_feature_importance(
     class_features = extract_top_features(documents, labels, top_n=30)
     
     # Fit vectorizer
-    extractor = TFIDFFeatureExtractor()
+    extractor = TFIDFVectorizer()
     extractor.fit(documents)
     
     # Get global IDF scores
