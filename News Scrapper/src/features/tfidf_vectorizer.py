@@ -15,7 +15,7 @@ from typing import List, Dict, Tuple, Optional, Union
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from scipy.sparse import csr_matrix
-import logging as logger
+from  loguru import  logger
 
 from config.settings import (
     TFIDF_MAX_FEATURES,
