@@ -61,7 +61,7 @@ class TFIDFVectorizer:
             self.stopwords.update(custom_stopwords)
         self.vectorizer=self._create_vectorizer()
 
-        self.isfitted=False
+        self.is_fitted=False
         self.vocabulary_size=0
 
     def _create_vectorizer(self):
@@ -120,4 +120,58 @@ class TFIDFVectorizer:
         except Exception as e:
             logger.error(f"Error transforming documents: {e}")
             raise
+
+    def fit_transform(self, documents: List[str]) -> csr_matrix:
+        """
+        Fit vectorizer and transform documents in one step.
+        
+        Args:
+            documents: List of preprocessed text documents
+            
+        Returns:
+            Sparse matrix of shape (n_documents, n_features)
+        """
+        logger.info(f"Fitting and transforming {len(documents)} documents...")
+        
+        try:
+            features = self.vectorizer.fit_transform(documents)
+            self.is_fitted = True
+            self.vocabulary_size = len(self.vectorizer.vocabulary_)
+            
+            logger.info(
+                f"Fit-transform complete. Shape: {features.shape}, "
+                f"Vocabulary: {self.vocabulary_size}"
+            )
+            
+            self._log_feature_statistics()
+            
+            return features
+            
+        except Exception as e:
+            logger.error(f"Error in fit_transform: {e}")
+            raise
       
+    def get_feature_names(self) -> List[str]:
+        """
+        Get list of feature names (vocabulary terms).
+        
+        Returns:
+            List of feature names
+        """
+        if not self.is_fitted:
+            raise ValueError("Vectorizer must be fitted first")
+
+        return self.vectorizer.get_feature_names_out()
+    
+    def get_vocabulary(self) -> Dict[str, int]:
+        """
+        Get vocabulary mapping (term -> index).
+        
+        Returns:
+            Dictionary mapping terms to feature indices
+        """
+        if not self.is_fitted:
+            raise ValueError("Vectorizer must be fitted first")
+        return self.vectorizer.vocabulary_
+    
+    
