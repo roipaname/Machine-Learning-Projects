@@ -481,6 +481,208 @@ class SentimentAnalyzer:
             logger.error(f"Error loading model: {e}")
             raise
 
+    def __repr__(self) -> str:
+        """String representation of classifier."""
+        status = "trained" if self.is_trained else "not trained"
+        return (
+            f"NewsArticleClassifier("
+            f"type={self.classifier_type}, "
+            f"status={status}, "
+            f"classes={self.num_classes})"
+        )
+    
+def train_classifier(
+    X_train: csr_matrix,
+    y_train: List[str],
+    X_test: csr_matrix,
+    y_test: List[str],
+    classifier_type: str = DEFAULT_CLASSIFIER,
+    tune_hyperparams: bool = False
+) -> Tuple[SentimentAnalyzer, Dict]:
+    """
+    Train a classifier and evaluate on test set.
+    
+    Args:
+        X_train: Training features
+        y_train: Training labels
+        X_test: Test features
+        y_test: Test labels
+        classifier_type: Type of classifier to use
+        tune_hyperparams: Whether to perform hyperparameter tuning
+        
+    Returns:
+        Tuple of (trained classifier, evaluation results)
+    """
+    logger.info(f"Training {classifier_type} classifier...")
+    
+    # Initialize classifier
+    classifier = SentimentAnalyzer(classifier_type=classifier_type)
+    
+    # Hyperparameter tuning if requested
+    if tune_hyperparams:
+        tuning_results = classifier.hyperparameter_tuning(X_train, y_train)
+        logger.info(f"Best parameters: {tuning_results['best_params']}")
+    else:
+        # Standard training
+        classifier.fit(X_train, y_train)
+    
+    # Evaluate on test set
+    results = classifier.evaluate(X_test, y_test)
+    
+    return classifier, results
+
+
+def evaluate_classifier(
+    classifier: SentimentAnalyzer,
+    X_test: csr_matrix,
+    y_test: List[str]
+) -> Dict:
+    """
+    Evaluate a trained classifier.
+    
+    Args:
+        classifier: Trained classifier
+        X_test: Test features
+        y_test: Test labels
+        
+    Returns:
+        Dictionary of evaluation metrics
+    """
+    return classifier.evaluate(X_test, y_test)
+
+
+def compare_classifiers(
+    X_train: csr_matrix,
+    y_train: List[str],
+    X_test: csr_matrix,
+    y_test: List[str],
+    classifiers: Optional[List[str]] = None
+) -> Dict[str, Dict]:
+    """
+    Train and compare multiple classifiers.
+    
+    Args:
+        X_train: Training features
+        y_train: Training labels
+        X_test: Test features
+        y_test: Test labels
+        classifiers: List of classifier types to compare (None = all)
+        
+    Returns:
+        Dictionary mapping classifier names to evaluation results
+    """
+    if classifiers is None:
+        classifiers = list(SentimentAnalyzer.CLASSIFIERS.keys())
+    
+    logger.info(f"Comparing {len(classifiers)} classifiers...")
+    
+    results = {}
+    
+    for clf_type in classifiers:
+        try:
+            logger.info(f"\n{'='*60}")
+            logger.info(f"Training {clf_type}")
+            logger.info(f"{'='*60}")
+            
+            clf, eval_results = train_classifier(
+                X_train, y_train,
+                X_test, y_test,
+                classifier_type=clf_type
+            )
+            
+            results[clf_type] = {
+                'classifier': clf,
+                'metrics': eval_results
+            }
+            
+            logger.info(
+                f"{clf_type} - Accuracy: {eval_results['accuracy']:.4f}, "
+                f"F1: {eval_results['f1_score']:.4f}"
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to train {clf_type}: {e}")
+            results[clf_type] = {'error': str(e)}
+    
+    # Print comparison summary
+    logger.info(f"\n{'='*60}")
+    logger.info("COMPARISON SUMMARY")
+    logger.info(f"{'='*60}")
+    
+    for clf_type, result in results.items():
+        if 'metrics' in result:
+            metrics = result['metrics']
+            logger.info(
+                f"{clf_type:20s} | "
+                f"Acc: {metrics['accuracy']:.4f} | "
+                f"F1: {metrics['f1_score']:.4f} | "
+                f"Prec: {metrics['precision']:.4f} | "
+                f"Rec: {metrics['recall']:.4f}"
+            )
+    
+    return results
+
+
+# =============================================================================
+# Example Usage
+# =============================================================================
+
+if __name__ == '__main__':
+    """
+    Example usage and testing of classifier.
+    """
+    from sklearn.datasets import fetch_20newsgroups
+    from sklearn.model_selection import train_test_split
+    from src.features.tfidf_vectorizer import TfidfVectorizer
+    
+    logger.info("Loading sample data...")
+    
+    # Load subset of 20newsgroups dataset
+    categories = ['sci.med', 'sci.space', 'rec.sport.baseball', 'comp.graphics']
+    newsgroups = fetch_20newsgroups(
+        subset='all',
+        categories=categories,
+        remove=('headers', 'footers', 'quotes')
+    )
+    
+    X = newsgroups.data
+    y = [categories[i] for i in newsgroups.target]
+    
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+    
+    # Extract features
+    logger.info("Extracting TF-IDF features...")
+    extractor = TfidfVectorizer(max_features=1000)
+    X_train_tfidf = extractor.fit_transform(X_train)
+    X_test_tfidf = extractor.transform(X_test)
+    
+    # Train single classifier
+    logger.info("\nTraining single classifier...")
+    clf, results = train_classifier(
+        X_train_tfidf, y_train,
+        X_test_tfidf, y_test,
+        classifier_type='logistic_regression'
+    )
+    
+    logger.info(f"\nAccuracy: {results['accuracy']:.4f}")
+    logger.info(f"F1 Score: {results['f1_score']:.4f}")
+    
+    # Compare classifiers
+    logger.info("\n\nComparing multiple classifiers...")
+    comparison = compare_classifiers(
+        X_train_tfidf, y_train,
+        X_test_tfidf, y_test,
+        classifiers=['logistic_regression', 'naive_bayes']
+    )
+    
+    logger.info("Testing complete!")
+
+     
+
+
 
         
 
