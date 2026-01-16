@@ -337,6 +337,61 @@ class SentimentAnalyzer:
             Dictionary with best parameters and scores
         """
         logger.info(f"Starting hyperparameter tuning for {self.classifier_type}...")
+        y_encoded=self.label_encoder.fit_transform(y)
+        param_grid=self.config['grid_params']
+
+        grid_search=GridSearchCV(
+            estimator=self.config['class'](**self.config['params']),
+            param_grid=param_grid,
+            cv=cv,
+            scoring='f1_weighted',
+            n_jobs=-1,
+            verbose=1
+
+        )
+        grid_search.fit(X,y_encoded)
+        self.classifier=grid_search.best_estimator_
+        self.is_trained=True
+
+        results = {
+            'best_params': grid_search.best_params_,
+            'best_score': float(grid_search.best_score_),
+            'cv_results': grid_search.cv_results_
+        }
+        
+        logger.info(
+            f"Best parameters: {grid_search.best_params_} "
+            f"(score: {grid_search.best_score_:.4f})"
+        )
+        return results
+    def get_feature_importance(self, top_n: int = 20) -> Dict[str, List[float]]:
+        """
+        Get feature importance scores (model-specific).
+        
+        Args:
+            top_n: Number of top features per class
+            
+        Returns:
+            Dictionary mapping class names to feature importance scores
+        """
+        if not self.is_trained:
+            raise ValueError("Model must be trained first")
+        
+        # Only certain models have interpretable coefficients
+        if not hasattr(self.classifier, 'coef_'):
+            logger.warning(f"{self.classifier_type} does not have interpretable coefficients")
+            return {}
+        
+        coef = self.classifier.coef_
+        
+        # Get top features per class
+        importance = {}
+        for idx, class_name in enumerate(self.class_names):
+            class_coef = coef[idx] if len(coef.shape) > 1 else coef
+            top_indices = np.argsort(np.abs(class_coef))[-top_n:][::-1]
+            importance[class_name] = top_indices.tolist()
+        
+        return importance
 
 
         
