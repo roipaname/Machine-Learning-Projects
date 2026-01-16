@@ -137,3 +137,109 @@ def _balance_classes(
     # Unpack
     tweet_ids, documents, labels = zip(*balanced)
     return list(tweet_ids), list(documents), list(labels)
+
+def train_single_model(
+    X_train, y_train,
+    X_test, y_test,
+    classifier_type: str,
+    tune_hyperparams: bool = False,
+    save_model: bool = True
+) -> Tuple[SentimentAnalyzer, Dict]:
+    """
+    Train a single classifier.
+    
+    Args:
+        X_train: Training features
+        y_train: Training labels
+        X_test: Test features
+        y_test: Test labels
+        classifier_type: Type of classifier
+        tune_hyperparams: Whether to tune hyperparameters
+        save_model: Whether to save trained model
+        
+    Returns:
+        Tuple of (trained classifier, evaluation results)
+    """
+    logger.info(f"{'='*70}")
+    logger.info(f"Training {classifier_type}")
+    logger.info(f"{'='*70}")
+    
+    # Train
+    classifier, results = train_classifier(
+        X_train, y_train,
+        X_test, y_test,
+        classifier_type=classifier_type,
+        tune_hyperparams=tune_hyperparams
+    )
+    
+    # Log results
+    logger.info(f"\nResults for {classifier_type}:")
+    logger.info(f"  Accuracy:  {results['accuracy']:.4f}")
+    logger.info(f"  Precision: {results['precision']:.4f}")
+    logger.info(f"  Recall:    {results['recall']:.4f}")
+    logger.info(f"  F1 Score:  {results['f1_score']:.4f}")
+    
+    # Generate visualizations
+    evaluator = ModelEvaluator()
+    
+    # Predictions for visualization
+    y_pred = classifier.predict(X_test)
+    
+    # Confusion matrix
+    try:
+        evaluator.plot_confusion_matrix(
+            y_test, y_pred,
+            classifier.class_names,
+            model_name=classifier_type,
+            normalize=True
+        )
+        logger.info(f"  ✓ Confusion matrix saved")
+    except Exception as e:
+        logger.warning(f"  ✗ Could not generate confusion matrix: {e}")
+    
+    # Precision/Recall by class
+    try:
+        evaluator.plot_precision_recall_by_class(
+            y_test, y_pred,
+            classifier.class_names,
+            model_name=classifier_type
+        )
+        logger.info(f"  ✓ Precision/Recall plot saved")
+    except Exception as e:
+        logger.warning(f"  ✗ Could not generate precision/recall plot: {e}")
+    
+    # ROC curves (if probabilities available)
+    try:
+        y_proba = classifier.predict_proba(X_test)
+        evaluator.plot_roc_curves(
+            y_test, y_proba,
+            classifier.class_names,
+            model_name=classifier_type
+        )
+        logger.info(f"  ✓ ROC curves saved")
+    except Exception as e:
+        logger.warning(f"  ✗ Could not generate ROC curves: {e}")
+    
+    # Full evaluation report
+    try:
+        y_proba = classifier.predict_proba(X_test)
+        report = evaluator.generate_full_report(
+            y_test, y_pred, y_proba,
+            classifier.class_names,
+            model_name=classifier_type,
+            save=True
+        )
+        logger.info(f"  ✓ Evaluation report saved")
+    except Exception as e:
+        logger.warning(f"  ✗ Could not generate evaluation report: {e}")
+    
+    # Save model
+    if save_model:
+        try:
+            model_path = MODELS_DIR / f"{classifier_type}_model.pkl"
+            classifier.save(model_path)
+            logger.success(f"  ✓ Model saved to {model_path}")
+        except Exception as e:
+            logger.error(f"  ✗ Failed to save model: {e}")
+    
+    return classifier, results
