@@ -291,6 +291,52 @@ class SentimentAnalyzer:
         )
         
         return results
+    
+    def _cross_validate( self,
+        X: csr_matrix,
+        y: np.ndarray
+    ) -> Dict[str, float]:
+        """
+        Perform cross-validation.
+        
+        Args:
+            X: Feature matrix
+            y: Encoded labels
+            
+        Returns:
+            Dictionary with mean and std of CV scores
+        """
+
+        logger.debug(f"Running {CV_FOLDS}-fold cross-validation...")
+        try:
+            scores=cross_val_score(self.classifier,X,y,cv=CV_FOLDS,scoring='f1_weighted',n_jobs=1)
+            return {
+                'mean': float(scores.mean()),
+                'std': float(scores.std()),
+                'scores': scores.tolist()
+            }
+        except Exception as e:
+            logger.warning(f"Cross-validation failed: {e}")
+            return {'mean': 0.0, 'std': 0.0, 'scores': []}
+        
+    def hyperparameter_tuning(
+        self,
+        X: csr_matrix,
+        y: List[str],
+        cv: int = 3
+    ) -> Dict[str, Any]:
+        """
+        Perform grid search for hyperparameter tuning.
+        
+        Args:
+            X: Feature matrix
+            y: Target labels
+            cv: Number of cross-validation folds
+            
+        Returns:
+            Dictionary with best parameters and scores
+        """
+        logger.info(f"Starting hyperparameter tuning for {self.classifier_type}...")
 
 
         
