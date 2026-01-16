@@ -392,6 +392,39 @@ class SentimentAnalyzer:
             importance[class_name] = top_indices.tolist()
         
         return importance
+    def save(self,filepath:Optional[Path]=None)->Path:
+        """
+        Save trained model to disk.
+        
+        Args:
+            filepath: Path to save model (uses default if None)
+            
+        Returns:
+            Path where model was saved
+        """
+        if not self.is_trained:
+            raise ValueError("Cannot save untrained model")
+        save_path=filepath or MODEL_SAVE_PATH
+        save_path = Path(save_path)
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+
+        model_data={
+            'model':self.classifier,
+            'label_encoder':self.label_encoder,
+            'classifier_type':self.classifier_type,
+            'config':self.config,
+            'metadata':{
+                'training_date': self.training_date.isoformat(),
+                'training_samples': self.training_samples,
+                'num_classes': self.num_classes,
+                'class_names': self.class_names,
+                'feature_dim': self.feature_dim,
+                'model_version': MODEL_VERSION
+            }
+        }
+
+        with open(save_path,'wb') as f:
+            pickle.dump(model_data,f,protocol=pickle.HIGHEST_PROTOCOL)
 
 
         
