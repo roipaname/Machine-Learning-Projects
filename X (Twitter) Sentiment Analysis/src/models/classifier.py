@@ -41,7 +41,7 @@ class SentimentAnalyzer:
                 "n_jobs":1,
                 "random_state":RANDOM_STATE,
                 'solver': 'saga',  # Fast for large datasets
-                'multi_class': 'multinomial',
+                
             },
             'grid_params': {
                 'C': [0.1, 1.0, 10.0],
@@ -680,7 +680,7 @@ if __name__ == '__main__':
         classifiers=['logistic_regression', 'naive_bayes']
     )
     
-    logger.info("Testing complete!")
+    logger.success("Testing complete!")
 
      
 

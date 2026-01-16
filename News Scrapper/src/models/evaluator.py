@@ -32,7 +32,7 @@ from sklearn.preprocessing import label_binarize
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-import logging as logger
+from loguru import logger
 
 from config.settings import DATA_DIR
 import matplotlib.pyplot as plt
