@@ -48,7 +48,7 @@ class SentimentAnalyzer:
                 'penalty': ['l1', 'l2']
             }
         },
-        "naives_bayes":{
+        "naive_bayes":{
             "class":MultinomialNB,
             "params":{
                "alpha":1.0
@@ -82,7 +82,7 @@ class SentimentAnalyzer:
                 'max_depth': [30, 50, None]
             }
         },
-        'gradien_boosting': {
+        'gradient_boosting': {
             'class': GradientBoostingClassifier,
             'params': {
                 'n_estimators': 100,
@@ -239,7 +239,8 @@ class SentimentAnalyzer:
 
         results=[]
         for pred,conf in zip(predictions,probas):
-            if conf>=threshold:
+            max_conf = conf.max()
+            if max_conf>=threshold:
                 results.append((pred,float(conf)))
             else:
                 results.append(("uncertain",float(conf)))
@@ -389,7 +390,8 @@ class SentimentAnalyzer:
         for idx, class_name in enumerate(self.class_names):
             class_coef = coef[idx] if len(coef.shape) > 1 else coef
             top_indices = np.argsort(np.abs(class_coef))[-top_n:][::-1]
-            importance[class_name] = top_indices.tolist()
+            top_values = class_coef[top_indices]  # <-- actual coefficients
+            importance[class_name] = top_values.tolist()  # store as list of floats
         
         return importance
     def save(self,filepath:Optional[Path]=None)->Path:
@@ -470,7 +472,7 @@ class SentimentAnalyzer:
             classifier.class_names = metadata['class_names']
             classifier.feature_dim = metadata['feature_dim']
             
-            logger.sucess(
+            logger.success(
                 f"Model loaded from {load_path}. "
                 f"Trained on {metadata['training_date'][:10]}"
             )
