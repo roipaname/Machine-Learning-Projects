@@ -98,3 +98,42 @@ def load_training_data( min_samples_per_class: int = 12,
 
 
 
+def _balance_classes(
+    tweet_ids: List[int],
+    documents: List[str],
+    labels: List[str]
+) -> Tuple[List[str], List[str], List[str]]:
+    """
+    Balance class distribution by undersampling majority classes.
+    
+    Args:
+        tweet_ids: List of tweet IDs
+        documents: List of documents
+        labels: List of labels
+        
+    Returns:
+        Balanced (tweet_ids, documents, labels)
+    """
+    from collections import defaultdict
+
+    grouped=defaultdict(list)
+
+    for tid,doc,label in zip(tweet_ids,documents,labels):
+        grouped[label].append(tid,doc,label)
+
+    min_size=min([len(sample) for sample in grouped.values()])
+
+    logger.info(f"Balancing classes to {min_size} samples each")
+
+    # Sample from each class
+    balanced = []
+    for label, samples in grouped.items():
+        sampled = np.random.choice(len(samples), min_size, replace=False)
+        balanced.extend([samples[i] for i in sampled])
+    
+    # Shuffle
+    np.random.shuffle(balanced)
+    
+    # Unpack
+    tweet_ids, documents, labels = zip(*balanced)
+    return list(tweet_ids), list(documents), list(labels)
