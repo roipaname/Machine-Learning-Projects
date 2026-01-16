@@ -408,23 +408,78 @@ class SentimentAnalyzer:
         save_path = Path(save_path)
         save_path.parent.mkdir(parents=True, exist_ok=True)
 
-        model_data={
-            'model':self.classifier,
-            'label_encoder':self.label_encoder,
-            'classifier_type':self.classifier_type,
-            'config':self.config,
-            'metadata':{
-                'training_date': self.training_date.isoformat(),
-                'training_samples': self.training_samples,
-                'num_classes': self.num_classes,
-                'class_names': self.class_names,
-                'feature_dim': self.feature_dim,
-                'model_version': MODEL_VERSION
+        try:
+            # Save model and metadata
+            model_data = {
+                'model': self.classifier,
+                'label_encoder': self.label_encoder,
+                'classifier_type': self.classifier_type,
+                'config': self.config,
+                'metadata': {
+                    'training_date': self.training_date.isoformat(),
+                    'training_samples': self.training_samples,
+                    'num_classes': self.num_classes,
+                    'class_names': self.class_names,
+                    'feature_dim': self.feature_dim,
+                    'model_version': MODEL_VERSION
+                }
             }
-        }
-
-        with open(save_path,'wb') as f:
-            pickle.dump(model_data,f,protocol=pickle.HIGHEST_PROTOCOL)
+            
+            with open(save_path, 'wb') as f:
+                pickle.dump(model_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+            
+            logger.info(f"Model saved to {save_path}")
+            return save_path
+            
+        except Exception as e:
+            logger.error(f"Error saving model: {e}")
+            raise
+    @classmethod
+    def load(cls, filepath: Optional[Path] = None) -> 'SentimentAnalyzer':
+        """
+        Load trained model from disk.
+        
+        Args:
+            filepath: Path to saved model (uses default if None)
+            
+        Returns:
+            Loaded NewsArticleClassifier instance
+        """
+        load_path = filepath or MODEL_SAVE_PATH
+        load_path = Path(load_path)
+        
+        if not load_path.exists():
+            raise FileNotFoundError(f"Model not found at {load_path}")
+        
+        try:
+            with open(load_path, 'rb') as f:
+                model_data = pickle.load(f)
+            
+            # Reconstruct classifier
+            classifier = cls(classifier_type=model_data['classifier_type'])
+            classifier.classifier = model_data['model']
+            classifier.label_encoder = model_data['label_encoder']
+            classifier.config = model_data['config']
+            
+            # Restore metadata
+            metadata = model_data['metadata']
+            classifier.is_trained = True
+            classifier.training_date = datetime.fromisoformat(metadata['training_date'])
+            classifier.training_samples = metadata['training_samples']
+            classifier.num_classes = metadata['num_classes']
+            classifier.class_names = metadata['class_names']
+            classifier.feature_dim = metadata['feature_dim']
+            
+            logger.sucess(
+                f"Model loaded from {load_path}. "
+                f"Trained on {metadata['training_date'][:10]}"
+            )
+            
+            return classifier
+            
+        except Exception as e:
+            logger.error(f"Error loading model: {e}")
+            raise
 
 
         
