@@ -59,10 +59,11 @@ class TFIDFVectorizer:
         self.stopwords=set(CUSTOM_STOPWORDS)
         if custom_stopwords:
             self.stopwords.update(custom_stopwords)
-        self.vectorizer=self._create_vectorizer()
-
         self.is_fitted=False
         self.vocabulary_size=0
+        self.vectorizer=self._create_vectorizer()
+
+        
 
     def _create_vectorizer(self):
         return TfidfVectorizer(

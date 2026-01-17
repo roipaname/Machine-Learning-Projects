@@ -39,7 +39,7 @@ from config.settings import (
     DATA_DIR,TEST_SIZE
 )
 from database.connect import DatabaseConnection
-from src.features.tfidf_vectorizer import TfidfVectorizer,extract_top_features
+from src.features.tfidf_vectorizer import TFIDFVectorizer,extract_top_features
 from src.models.classifier import SentimentAnalyzer,compare_classifiers,train_classifier
 
 from src.models.evaluator import ModelEvaluator
@@ -307,7 +307,7 @@ def train_and_compare_all(
 
 
 def save_training_metadata(
-    vectorizer: TfidfVectorizer,
+    vectorizer: TFIDFVectorizer,
     classifier: SentimentAnalyzer,
     results: Dict,
     train_size: int,
@@ -470,7 +470,7 @@ Examples:
         
         # Step 3: Extract features
         logger.info("\n[Step 3/5] Extracting TF-IDF features...")
-        vectorizer = TfidfVectorizer()
+        vectorizer = TFIDFVectorizer()
         
         X_train_tfidf = vectorizer.fit_transform(X_train)
         X_test_tfidf = vectorizer.transform(X_test)
