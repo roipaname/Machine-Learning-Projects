@@ -1,0 +1,154 @@
+{
+  "model_name": "logistic_regression",
+  "timestamp": "2026-01-17T15:45:11.095220",
+  "overall_metrics": {
+    "accuracy": 0.3474563953488372,
+    "precision": 0.7252336501889936,
+    "recall": 0.3474563953488372,
+    "f1_score": 0.2287798794163663,
+    "num_samples": 13760
+  },
+  "per_class_metrics": {
+    "Irrelevant": {
+      "precision": 0.910958904109589,
+      "recall": 0.05493597686906237,
+      "f1-score": 0.10362290611608882,
+      "support": 2421.0
+    },
+    "Negative": {
+      "precision": 0.3191326920140479,
+      "recall": 0.995475113122172,
+      "f1-score": 0.48332080707637165,
+      "support": 4199.0
+    },
+    "Neutral": {
+      "precision": 0.8802395209580839,
+      "recall": 0.043555555555555556,
+      "f1-score": 0.08300395256916997,
+      "support": 3375.0
+    },
+    "Positive": {
+      "precision": 0.9197707736389685,
+      "recall": 0.08525896414342629,
+      "f1-score": 0.15605250364608653,
+      "support": 3765.0
+    },
+    "accuracy": 0.3474563953488372,
+    "macro avg": {
+      "precision": 0.7575254726801723,
+      "recall": 0.294806402422554,
+      "f1-score": 0.2065000423519292,
+      "support": 13760.0
+    },
+    "weighted avg": {
+      "precision": 0.7252336501889936,
+      "recall": 0.3474563953488372,
+      "f1-score": 0.2287798794163663,
+      "support": 13760.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      133,
+      2273,
+      4,
+      11
+    ],
+    [
+      3,
+      4180,
+      7,
+      9
+    ],
+    [
+      2,
+      3218,
+      147,
+      8
+    ],
+    [
+      8,
+      3427,
+      9,
+      321
+    ]
+  ],
+  "class_names": [
+    "Irrelevant",
+    "Negative",
+    "Neutral",
+    "Positive"
+  ],
+  "roc_auc": {
+    "Irrelevant": 0.555601490748175,
+    "Negative": 0.5609881564431832,
+    "Neutral": 0.5558999982168014,
+    "Positive": 0.5680757775966335,
+    "macro_avg": 0.5601413557511983
+  },
+  "error_analysis": {
+    "total_errors": 8979,
+    "error_rate": 0.6525436046511628,
+    "errors_by_class": {
+      "Irrelevant": {
+        "total": 2288,
+        "misclassified_as": {
+          "Negative": 2273,
+          "Positive": 11,
+          "Neutral": 4
+        }
+      },
+      "Positive": {
+        "total": 3444,
+        "misclassified_as": {
+          "Negative": 3427,
+          "Irrelevant": 8,
+          "Neutral": 9
+        }
+      },
+      "Neutral": {
+        "total": 3228,
+        "misclassified_as": {
+          "Negative": 3218,
+          "Positive": 8,
+          "Irrelevant": 2
+        }
+      },
+      "Negative": {
+        "total": 19,
+        "misclassified_as": {
+          "Irrelevant": 3,
+          "Positive": 9,
+          "Neutral": 7
+        }
+      }
+    },
+    "most_confused_pairs": [
+      [
+        "Positive",
+        "Negative",
+        3427
+      ],
+      [
+        "Neutral",
+        "Negative",
+        3218
+      ],
+      [
+        "Irrelevant",
+        "Negative",
+        2273
+      ],
+      [
+        "Irrelevant",
+        "Positive",
+        11
+      ],
+      [
+        "Positive",
+        "Neutral",
+        9
+      ]
+    ]
+  }
+}

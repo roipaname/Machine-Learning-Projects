@@ -1,0 +1,130 @@
+{
+  "model_name": "logistic_regression",
+  "timestamp": "2026-01-17T15:44:13.585942",
+  "overall_metrics": {
+    "accuracy": 0.4,
+    "precision": 0.16000000000000003,
+    "recall": 0.4,
+    "f1_score": 0.22857142857142856,
+    "num_samples": 30
+  },
+  "per_class_metrics": {
+    "Irrelevant": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 1.0
+    },
+    "Negative": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 7.0
+    },
+    "Neutral": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 10.0
+    },
+    "Positive": {
+      "precision": 0.4,
+      "recall": 1.0,
+      "f1-score": 0.5714285714285714,
+      "support": 12.0
+    },
+    "accuracy": 0.4,
+    "macro avg": {
+      "precision": 0.1,
+      "recall": 0.25,
+      "f1-score": 0.14285714285714285,
+      "support": 30.0
+    },
+    "weighted avg": {
+      "precision": 0.16000000000000003,
+      "recall": 0.4,
+      "f1-score": 0.22857142857142856,
+      "support": 30.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      0,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      0,
+      7
+    ],
+    [
+      0,
+      0,
+      0,
+      10
+    ],
+    [
+      0,
+      0,
+      0,
+      12
+    ]
+  ],
+  "class_names": [
+    "Irrelevant",
+    "Negative",
+    "Neutral",
+    "Positive"
+  ],
+  "roc_auc": {
+    "Irrelevant": 0.5172413793103448,
+    "Negative": 0.5217391304347826,
+    "Neutral": 0.525,
+    "Positive": 0.5416666666666666,
+    "macro_avg": 0.5264117941029485
+  },
+  "error_analysis": {
+    "total_errors": 18,
+    "error_rate": 0.6,
+    "errors_by_class": {
+      "Neutral": {
+        "total": 10,
+        "misclassified_as": {
+          "Positive": 10
+        }
+      },
+      "Negative": {
+        "total": 7,
+        "misclassified_as": {
+          "Positive": 7
+        }
+      },
+      "Irrelevant": {
+        "total": 1,
+        "misclassified_as": {
+          "Positive": 1
+        }
+      }
+    },
+    "most_confused_pairs": [
+      [
+        "Neutral",
+        "Positive",
+        10
+      ],
+      [
+        "Negative",
+        "Positive",
+        7
+      ],
+      [
+        "Irrelevant",
+        "Positive",
+        1
+      ]
+    ]
+  }
+}
