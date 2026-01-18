@@ -1,0 +1,280 @@
+/* Import Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+/* Root variables */
+:root {
+  --gold: #d4af37;
+  --gold-light: #f4e4bc;
+  --gold-dark: #b8941f;
+  --green: #2e7d32;
+  --green-light: #66bb6a;
+  --green-dark: #1b5e20;
+  --white: #ffffff;
+  --off-white: #fafafa;
+  --gray-light: #f5f5f5;
+  --gray-medium: #e0e0e0;
+  --text-primary: #2c2c2c;
+  --text-secondary: #666666;
+}
+
+/* Global styles */
+* {
+  font-family: "Inter", sans-serif;
+}
+
+/* Hide Streamlit branding */
+#MainMenu {
+  visibility: hidden;
+}
+footer {
+  visibility: hidden;
+}
+header {
+  visibility: hidden;
+}
+
+/* Main app container */
+.main {
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f0 50%, #f0f5f0 100%);
+  padding: 2rem 1rem;
+}
+
+.block-container {
+  max-width: 800px;
+  padding: 2rem 1rem;
+}
+
+/* Header styling */
+.header-container {
+  text-align: center;
+  padding: 2rem 1rem 3rem 1rem;
+  background: linear-gradient(135deg, var(--white) 0%, var(--gold-light) 100%);
+  border-radius: 20px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.1);
+}
+
+.main-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(
+    135deg,
+    var(--gold-dark) 0%,
+    var(--green-dark) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-top: 0.5rem;
+}
+
+/* Form container */
+.form-container {
+  background: var(--white);
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+/* Input labels */
+.input-label {
+  display: block;
+  font-weight: 600;
+  color: var(--white);
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
+}
+
+/* Text area styling */
+textarea {
+  border: 2px solid var(--gray-medium) !important;
+  border-radius: 12px !important;
+  padding: 1rem !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease !important;
+  background: var(--off-white) !important;
+  color: #000000 !important;
+}
+
+textarea:focus {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1) !important;
+  background: var(--white) !important;
+}
+
+/* Select box styling */
+.stSelectbox > div > div {
+  border: 2px solid var(--gray-medium) !important;
+  border-radius: 12px !important;
+  background: var(--green-light) !important;
+  transition: all 0.3s ease !important;
+}
+
+.stSelectbox > div > div:hover {
+  border-color: var(--gold-dark) !important;
+}
+
+.stSelectbox > div > div:focus-within {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1) !important;
+  background: var(--white) !important;
+}
+
+/* Button styling */
+.button-container {
+  margin: 2rem 0;
+  text-align: center;
+}
+
+button[kind="primary"] {
+  background: linear-gradient(
+    135deg,
+    var(--gold) 0%,
+    var(--gold-dark) 100%
+  ) !important;
+  color: var(--white) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 0.75rem 2rem !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.5px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3) !important;
+}
+
+button[kind="primary"]:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4) !important;
+  background: linear-gradient(
+    135deg,
+    var(--gold-dark) 0%,
+    var(--gold) 100%
+  ) !important;
+}
+
+button[kind="primary"]:active {
+  transform: translateY(0px) !important;
+}
+
+/* Result container */
+.result-container {
+  background: linear-gradient(
+    135deg,
+    var(--white) 0%,
+    var(--green-light) 5%,
+    var(--white) 100%
+  );
+  padding: 2rem;
+  border-radius: 16px;
+  margin-top: 1.5rem;
+  border: 2px solid var(--green-light);
+  box-shadow: 0 4px 20px rgba(46, 125, 50, 0.1);
+}
+
+.result-container h3 {
+  color: var(--green-dark);
+  margin-bottom: 1.5rem;
+}
+
+/* Metrics styling */
+.stMetric {
+  background: var(--white);
+  padding: 1rem;
+  border-radius: 12px;
+  border-left: 4px solid var(--gold);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.stMetric label {
+  color: var(--text-secondary) !important;
+  font-weight: 500 !important;
+}
+
+.stMetric > div {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+/* Expander styling */
+.streamlit-expanderHeader {
+  background: var(--off-white) !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--gray-medium) !important;
+  font-weight: 500 !important;
+}
+
+.streamlit-expanderHeader:hover {
+  background: var(--gold-light) !important;
+  border-color: var(--gold) !important;
+}
+
+/* Success/Error message styling */
+.stSuccess {
+  background: linear-gradient(135deg, var(--white) 0%, #e8f5e9 100%) !important;
+  border-left: 4px solid var(--green) !important;
+  border-radius: 10px !important;
+  padding: 1rem !important;
+}
+
+.stError {
+  background: linear-gradient(135deg, var(--white) 0%, #ffebee 100%) !important;
+  border-left: 4px solid #d32f2f !important;
+  border-radius: 10px !important;
+  padding: 1rem !important;
+}
+
+/* Spinner styling */
+.stSpinner > div {
+  border-top-color: var(--gold) !important;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 3rem;
+  border-top: 2px solid var(--gray-medium);
+  background: linear-gradient(
+    135deg,
+    var(--off-white) 0%,
+    var(--gold-light) 100%
+  );
+  border-radius: 12px;
+}
+
+/* Columns spacing */
+.row-widget.stHorizontal {
+  gap: 1rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .main-title {
+    font-size: 2rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+
+  .form-container {
+    padding: 1.5rem;
+  }
+
+  .result-container {
+    padding: 1.5rem;
+  }
+}

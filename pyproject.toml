@@ -24,6 +24,7 @@ dependencies = [
     "seaborn>=0.13.2",
     "spacy>=3.8.11",
     "sqlalchemy>=2.0.45",
+    "streamlit>=1.53.0",
     "trafilatura>=2.0.0",
     "uvicorn>=0.40.0",
 ]
