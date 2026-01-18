@@ -6,12 +6,12 @@ from functools import lru_cache
 
 from config.settings import MODELS_DIR, VECTORIZER_SAVE_PATH, MODEL_SAVE_PATH
 from src.models.classifier import SentimentAnalyzer
-from src.features.tfidf_vectorizer import TfidfVectorizer
+from src.features.tfidf_vectorizer import TFIDFVectorizer
 
 
 class ModelService:
     def __init__(self):
-        self._vectorizer: Optional[TfidfVectorizer] = None
+        self._vectorizer: Optional[TFIDFVectorizer] = None
         self._models: Dict[str, SentimentAnalyzer] = {}
 
     # -------------------------
@@ -31,7 +31,7 @@ class ModelService:
     def _load_vectorizer(self):
         if self._vectorizer is None:
             logger.info("Loading TF-IDF vectorizer...")
-            self._vectorizer = TfidfVectorizer.load(VECTORIZER_SAVE_PATH)
+            self._vectorizer = TFIDFVectorizer.load(VECTORIZER_SAVE_PATH)
             logger.success("Vectorizer loaded")
 
     # -------------------------
@@ -42,7 +42,7 @@ class ModelService:
 
         if classifier_type:
             model_key = classifier_type
-            model_path = Path(MODELS_DIR) / f"{classifier_type}.pkl"
+            model_path = Path(MODELS_DIR) / f"{classifier_type}_model.pkl"
         else:
             model_path = Path(MODEL_SAVE_PATH)
             model_key = model_path.stem

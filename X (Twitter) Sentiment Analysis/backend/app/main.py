@@ -1,10 +1,16 @@
 from fastapi import FastAPI,HTTPException,Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
+import sys
+
+PROJECT_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 from schemas.request import SentimentRequest
 from schemas.response import SentimentResponse,SentimentPrediction
 from core.dependencies import get_model_service
+
 from core.model_loader import ModelService
+
 from loguru import logger
 app=FastAPI(
     title="Twitter Sentiment Ananlyzer",

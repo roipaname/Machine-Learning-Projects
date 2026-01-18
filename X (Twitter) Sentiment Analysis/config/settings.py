@@ -22,12 +22,13 @@ DATA_DIR=BASE_DIR/ 'data'
 MODELS_DIR=BASE_DIR / 'models'
 LOGS_DIR=BASE_DIR  /' logs'
 CONFIG_DIR=BASE_DIR / 'config'
-VECTORIZER_SAVE_PATH=BASE_DIR /'vectorizer'
+VECTORIZER_SAVE_PATH=MODELS_DIR /'tfidf_vectorizer.pkl'
+
 
 KAGGLE_TRAIN_DATASET=DATA_DIR / 'raw/twitter_training.csv'
 KAGGLE_TEST_DATASET=DATA_DIR / 'raw/twitter_training.csv'
 
-for directory in [DATA_DIR, MODELS_DIR, LOGS_DIR,VECTORIZER_SAVE_PATH,]:
+for directory in [DATA_DIR, MODELS_DIR, LOGS_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
 
 MONGODBURL=os.getenv("MONGODBURL")

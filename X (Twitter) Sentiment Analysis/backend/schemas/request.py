@@ -6,7 +6,7 @@ class SentimentRequest(BaseModel):
     texts:List[str]=Field(
         ...,
         min_items=1,
-        max_items=2,
+        max_items=10,
         description="List of text to analyze"
     )
 
