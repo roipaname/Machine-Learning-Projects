@@ -1,0 +1,168 @@
+Project Summary
+Enterprise Customer Churn Intelligence Platform
+
+This project implements an end-to-end customer churn prediction and decision intelligence system built on enterprise CRM data. It combines classical machine learning, feature store design, and LLM-based reasoning enhanced with context engineering, retrieval-augmented generation (RAG), and output regularization to deliver reliable, actionable churn insights for business teams.
+
+System Layers Overview
+1. Data Layer (CRM & SQL)
+
+Extracts customer, subscription, billing, usage, and support data from a relational CRM database
+
+Uses SQL joins, aggregations, and temporal windows
+
+Applies missing data strategies and schema validation
+
+Focus: Enterprise data modeling and access patterns
+
+2. Feature Engineering & Feature Store Layer
+
+Builds reusable churn features (engagement decay, support intensity, revenue signals)
+
+Simulates a feature store with:
+
+Versioned feature definitions
+
+Offline (Parquet) and optional online access
+
+Ensures training-serving feature parity
+
+Focus: Production ML foundations
+
+3. Machine Learning Layer
+
+Trains churn prediction models (Logistic Regression, Random Forest, Gradient Boosting)
+
+Evaluates using business-aware metrics (recall, precision, expected revenue saved)
+
+Produces calibrated churn probabilities
+
+Focus: Predictive modeling aligned with business impact
+
+4. Context Engineering Layer 🧠
+
+Dynamically assembles only relevant customer context for LLM consumption
+
+Controls:
+
+Feature selection
+
+Token budgets
+
+Time windows
+
+Excludes raw PII and noisy attributes
+
+Context = 
+- Top churn-driving features
+- Recent customer activity summary
+- Support and billing signals
+
+
+Focus: Making LLM inputs precise, minimal, and reliable
+
+5. Retrieval-Augmented Generation (RAG) Layer 📚
+
+Retrieves relevant documents to ground LLM responses, such as:
+
+CRM retention policies
+
+Discount eligibility rules
+
+Customer success playbooks
+
+Uses vector search over embedded documents
+
+Injects retrieved snippets into the LLM context
+
+Retrieved Context:
+- "Customers inactive >60 days qualify for onboarding outreach"
+
+
+Focus: Reducing hallucinations and aligning outputs with company policy
+
+6. Prompt Engineering Layer
+
+Uses structured, role-based prompts for churn explanation and recommendations
+
+Maintains versioned prompt templates
+
+Separates:
+
+System instructions
+
+Customer context
+
+Retrieved policy context
+
+Focus: Prompt lifecycle management
+
+7. Output Regularization Layer 🧾
+
+Enforces structured, machine-readable LLM outputs (JSON schemas)
+
+Validates:
+
+Required fields
+
+Allowed actions
+
+Confidence thresholds
+
+Applies post-processing rules and fallbacks
+
+{
+  "risk_level": "high",
+  "top_factors": ["Low engagement", "High support volume"],
+  "recommended_action": "Proactive retention call"
+}
+
+
+Focus: Deterministic, production-safe LLM behavior
+
+8. Hybrid Decision Intelligence Layer
+
+ML model determines churn probability
+
+LLM generates explanations and interventions only when thresholds are met
+
+Business rules override or constrain LLM suggestions
+
+Focus: Safe human-facing AI decisions
+
+9. Reliability, Safety & Governance Layer
+
+PII redaction and input filtering
+
+Prompt and context drift monitoring
+
+Logging of predictions, explanations, and actions
+
+Focus: Enterprise AI reliability and auditability
+
+10. Deployment & API Layer (Optional)
+
+FastAPI endpoints for:
+
+Churn prediction
+
+Churn explanation
+
+Retention recommendations
+
+Designed for CRM or dashboard integration
+
+Focus: Real-world AI system deployment
+
+Key Outcome
+
+This project demonstrates the ability to design enterprise-grade AI systems where:
+
+ML handles prediction
+
+LLMs handle reasoning and communication
+
+Context engineering, RAG, and output regularization ensure reliability
+
+Job Signal:
+
+Strong readiness for AI Engineer / ML Engineer roles, especially in SaaS, FinTech, and data-driven enterprises.

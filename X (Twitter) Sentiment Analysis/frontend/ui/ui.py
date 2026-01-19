@@ -159,7 +159,7 @@ if st.button("🚀 Analyze Tweet", use_container_width=True, type="primary"):
                     if model == "all":
                         st.markdown("### 🤖 Model Predictions")
                         
-                        # Assuming the API returns predictions for all models when "all" is selected
+                        
                         for prediction in result.get("predictions", []):
                             model_name = result.get("model", "Unknown Model")
                             label = prediction.get("label", "N/A")
