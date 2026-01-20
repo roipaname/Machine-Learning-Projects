@@ -6,6 +6,10 @@ This project implements an end-to-end customer churn prediction and decision int
 System Layers Overview
 1. Data Layer (CRM & SQL)
 
+
+
+
+
 Extracts customer, subscription, billing, usage, and support data from a relational CRM database
 
 Uses SQL joins, aggregations, and temporal windows
