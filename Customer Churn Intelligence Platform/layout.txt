@@ -1,0 +1,21 @@
+churn-intelligence-platform/
+   ├── data/
+   │   ├── raw/
+   │   ├── processed/
+   │   └── feature_store/
+   ├── src/
+   │   ├── data_layer/
+   │   ├── feature_engineering/
+   │   ├── ml_models/
+   │   ├── context_engineering/
+   │   ├── rag/
+   │   ├── prompt_engineering/
+   │   ├── output_regularization/
+   │   ├── decision_intelligence/
+   │   ├── governance/
+   │   └── api/
+   ├── notebooks/
+   ├── tests/
+   ├── configs/
+   ├── docs/
+   └── requirements.txt
