@@ -1,4 +1,4 @@
-from sqlalchemy import Column,Text,Integer,Float,DateTime,Boolean,Index,UniqueConstraint,Enum
+from sqlalchemy import Column,Text,Integer,Float,DateTime,Boolean,Index,ForeignKey,Enum
 from sqlachemy.ext.declarative import declarative_base
 from slqalchemy.dialects.postgresql import JSON,UUID
 import enum
@@ -41,4 +41,4 @@ class Accounts(Base):
 class Customers(Base):
     __tablename__="customers"
     customer_id=Column(UUID(as_uuid=True),primary_key=True,unique=True,default=uuid.uuid4)
-    account_id=Column(UUID(as_uuid=True))
+    account_id=Column(UUID(as_uuid=True),ForeignKey("accounts.account_id",ondelete="CASCADE"))
