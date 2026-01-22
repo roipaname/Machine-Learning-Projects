@@ -7,6 +7,10 @@ from  loguru import logger
 import uuid
 
 
+# =========================
+# ENUM DEFINITIONS
+# =========================
+# Enums enforce valid values at BOTH app and DB level
 class ContractType(enum.Enum):
     monthly="monthly"
     annual="annual"
@@ -54,6 +58,10 @@ class IssueType(enum.Enum):
 
 Base=declarative_base()
 
+# =========================
+# ACCOUNTS TABLE
+# =========================
+# Represents a company / organization (B2B root entity)
 
 class Accounts(Base):
     __tablename__="account"
@@ -72,7 +80,10 @@ class Accounts(Base):
         Index("idx_accounts-created_at","created_at")
 
     )
-
+# =========================
+# CUSTOMERS TABLE
+# =========================
+# Represents individual users belonging to an account
 class Customers(Base):
     __tablename__="customers"
     customer_id=Column(UUID(as_uuid=True),primary_key=True,unique=True,default=uuid.uuid4)
@@ -95,7 +106,10 @@ class Customers(Base):
         Index("idx_customer_signup_date","signup_date")
     )
 
-
+# =========================
+# SUBSCRIPTIONS TABLE
+# =========================
+# Tracks billing plans at the account level
 class Subscriptions(Base):
     __tablename__="subscriptions"
     subscription_id=Column(UUID(as_uuid=True),primary_key=True,unique=True,default=uuid.uuid4)
@@ -111,6 +125,10 @@ class Subscriptions(Base):
     )
 
 
+# =========================
+# USAGE EVENTS TABLE
+# =========================
+# High-volume behavioral data (key churn driver)
 class UsageEvents(Base):
     __tablename__="usage_events"
     event_id=Column(UUID(as_uuid=True),primary_key=True,unique=True,default=uuid.uuid4)
@@ -123,6 +141,10 @@ class UsageEvents(Base):
         Index("idx_usage_events_event_type","event_type"),
         Index("idx_usage_events_device_type","device_type")
     )
+# =========================
+# BILLING INVOICES TABLE
+# =========================
+# Payment behavior strongly predicts churn
 
 class BillingInvoices(Base):
     __tablename__="billing_invoices"
