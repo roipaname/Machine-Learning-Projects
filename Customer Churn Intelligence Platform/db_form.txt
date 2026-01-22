@@ -21,17 +21,17 @@ created_at
 subscriptions
 subscription_id
 account_id
-plan_name
+plan_name         -- basic, pro, enterprise
 monthly_fee
 start_date
 end_date
 auto_renew
-status
+status            -- active, canceled, paused
 
 usage_events
-event_id
-customer_id
-event_type
+event_id        PK
+customer_id     FK
+event_type      -- login, upload, export, api_call
 event_time
 device_type
 
@@ -47,7 +47,7 @@ support_tickets
 ticket_id
 customer_id
 created_at
-issue_type
+issue_type      -- bug, billing, onboarding
 priority
 resolution_time_hours
 satisfaction_score
