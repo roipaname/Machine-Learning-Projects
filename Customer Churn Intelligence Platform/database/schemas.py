@@ -41,7 +41,15 @@ class EventType(enum.Enum):
     apicall="apicall"
     upload="upload"
     export="export"
+class Priority(enum.Enum):
+    high="high"
+    medium="medium"
+    low="low"
 
+class IssueType(enum.Enum):
+    bug="bug"
+    billing="billing"
+    onboarding="onboarding"
 
 
 Base=declarative_base()
@@ -115,4 +123,37 @@ class UsageEvents(Base):
         Index("idx_usage_events_event_type","event_type"),
         Index("idx_usage_events_device_type","device_type")
     )
+
+class BillingInvoices(Base):
+    __tablename__="billing_invoices"
+    invoice_id=Column(UUID(as_uuid=True),primary_key=True,unique=True,default=uuid.uuid4)
+    account_id=Column(UUID(as_uuid=True),ForeignKey("accounts.account_id",ondelete="CASCADE"))
+    invoice_date=Column(DateTime,nullable=False,default=datetime.utcnow)
+    paid=Column(Boolean,nullable=True)
+    days_late=Column(Integer,nullable=True)
+
+    __table_args__=(
+        Index("idx_billing_invoices_invoice_date","invoice_date"),
+        Index("idx_billing_invoices_days_late","days_late")
+    )
+
+class SupportTickets(Base):
+    __tablename__="support_tickets"
+    ticket_id=Column(UUID(as_uuid=True),primary_key=True,unique=True,default=uuid.uuid4)
+    customer_id=Column(UUID(as_uuid=True),ForeignKey("customers.customer_id",ondelete="CASCADE"))
+    created_at=Column(DateTime,nullable=False, default=datetime.utcnow)
+    issue_type=Column(Enum(
+        IssueType,"issue_type_enum"
+    ),nullable=False)
+    priority=Column(Enum(
+        Priority,"priority_enum"
+    ),nullable=False, default="low")
+    resolution_time_hours=Column(Float,nullable=False)
+    satisfaction_score=Column(Float,nullable=False)
+
+    __table_args__=(
+        Index("idx_support_ticket_issue_type","issue_type"),
+        Index("idx_support_ticket_priority","priority")
+    )
+
 
