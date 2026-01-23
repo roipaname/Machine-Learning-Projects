@@ -1,0 +1,14 @@
+rag-kb/
+├── data/
+│   ├── documents/        # PDFs, TXTs you add
+│   └── vectorstore/      # Persisted FAISS index
+│
+├── src/
+│   ├── ingest.py         # Add / update documents
+│   ├── qa.py             # Ask questions
+│   ├── loader.py         # Document loading logic
+│   └── prompts.py        # Prompt engineering
+│
+├── .env
+├── pyproject.toml
+└── README.md
