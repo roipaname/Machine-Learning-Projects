@@ -1,33 +1,36 @@
 import os
-
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import faiss as FAISS
+from langchain_community.vectorstores import chroma as Chroma
 
-from loader import load_documents
+from src.loader import load_documents
 
 VECTORSTORE_PATH = "data/vectorstore"
 
 
 def ingest():
+    docs = load_documents("./data/documents")
 
-    docs=load_documents("./data/documents")
-    splitter=RecursiveCharacterTextSplitter(chunk_size=800,chunk_overlap=100)
-    chunks=splitter.split_documents(docs)
-    embeddings= OpenAIEmbeddings()
+    splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
+    chunks = splitter.split_documents(docs)
+
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
     if os.path.exists(VECTORSTORE_PATH):
-        vectorstore=FAISS.load_local(
-            VECTORSTORE_PATH,
-            embeddings,
-            allow_dangerous_deserialization=True
+        vectorstore = Chroma(
+            persist_directory=VECTORSTORE_PATH,
+            embedding_function=embeddings
         )
         vectorstore.add_documents(chunks)
     else:
-        vectorstore=FAISS.from_documents(chunks,embeddings)
+        vectorstore = Chroma.from_documents(
+            chunks,
+            embeddings,
+            persist_directory=VECTORSTORE_PATH
+        )
 
-    vectorstore.save_local(VECTORSTORE_PATH)
+    vectorstore.persist()
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     ingest()
-

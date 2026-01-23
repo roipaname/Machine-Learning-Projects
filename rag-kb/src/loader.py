@@ -1,7 +1,6 @@
 from pathlib import Path
 from langchain_community.document_loaders import PyPDFLoader,TextLoader,Docx2txtLoader
-import logging
-logging.basicConfig(logging.INFO)
+
 def load_documents(path:str):
     docs=[]
     if not path:
