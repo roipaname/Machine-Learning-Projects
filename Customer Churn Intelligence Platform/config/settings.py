@@ -39,7 +39,7 @@ for directory in [DATA_DIR, MODELS_DIR, LOGS_DIR,DATA_RAW_DIR,DATA_PROCESSED_DIR
 # ============================================================================
 
 
-DB_NAME=os.getenv("customerchurn")
+DB_NAME=os.getenv("DB_CHURN_NAME")
 
 if not DB_NAME:
     logger.error("DB_NAME not set")
@@ -173,6 +173,31 @@ GOVERNANCE = {
     "audit_path": BASE_DIR / "docs" / "audit_logs",
     "pii_columns": ["email", "phone_number"],
 }
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+
+# Log level
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
+
+# Log file paths
+LOG_FILE = LOGS_DIR / 'app.log'
+ERROR_LOG_FILE = LOGS_DIR / 'error.log'
+
+# Log rotation
+LOG_ROTATION = os.getenv('LOG_ROTATION', '10 MB')
+LOG_RETENTION = os.getenv('LOG_RETENTION', '30 days')
+
+# Log format
+LOG_FORMAT = (
+    "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+    "<level>{level: <8}</level> | "
+    "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
+    "<level>{message}</level>"
+)
+
+
 
 # =========================================================
 # API SETTINGS

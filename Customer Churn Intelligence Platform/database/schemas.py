@@ -1,6 +1,6 @@
 from sqlalchemy import Column,Text,Integer,Float,DateTime,Boolean,Index,ForeignKey,Enum
-from sqlachemy.ext.declarative import declarative_base
-from slqalchemy.dialects.postgresql import JSON,UUID
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.dialects.postgresql import JSON,UUID
 import enum
 from datetime import datetime
 from  loguru import logger
@@ -64,7 +64,7 @@ Base=declarative_base()
 # Represents a company / organization (B2B root entity)
 
 class Accounts(Base):
-    __tablename__="account"
+    __tablename__="accounts"
     account_id=Column(UUID(as_uuid=True),primary_key=True,unique=True,default=uuid.uuid4)
     company_name=Column(Text,nullable=True)
     industry=Column(Text,nullable=True)
@@ -95,10 +95,10 @@ class Customers(Base):
 
     signup_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     acquisition_channel = Column(Enum(
-        AcquisitionChannel,"acquisition_channel_enum"
+        AcquisitionChannel,name="acquisition_channel_enum"
     ), nullable=True)
     customer_segment = Column(Enum(
-        CustomerSegment,"customer_segmnet_enum"
+        CustomerSegment,name="customer_segmnet_enum"
     ), nullable=True)
     __table_args__=(
         Index("idx_customer_acquisition_channel","acquisition_channel"),
@@ -114,11 +114,11 @@ class Subscriptions(Base):
     __tablename__="subscriptions"
     subscription_id=Column(UUID(as_uuid=True),primary_key=True,unique=True,default=uuid.uuid4)
     account_id=Column(UUID(as_uuid=True),ForeignKey("accounts.account_id",ondelete="CASCADE"))
-    plan_name=Column(Enum(SubPlanName,"subplan_name_enum"),nullable=False,default="basic")
+    plan_name=Column(Enum(SubPlanName,name="subplan_name_enum"),nullable=False,default="basic")
     monthlyfee=Column(Float,nullable=False)
     start_date=Column(DateTime, nullable=False, default=datetime.utcnow)
     end_date=Column(DateTime, nullable=False)
-    status=Column(Enum(SubscriptionStatus,"sub_satus_enum"),nullable=False,default="active")
+    status=Column(Enum(SubscriptionStatus,name="sub_satus_enum"),nullable=False,default="active")
     __table_args__=(
         Index("idx_subscription_plan_name","plan_name"),
         Index("idx_subscription_status","status")
@@ -134,7 +134,7 @@ class UsageEvents(Base):
     event_id=Column(UUID(as_uuid=True),primary_key=True,unique=True,default=uuid.uuid4)
     customer_id=Column(UUID(as_uuid=True),ForeignKey("customers.customer_id",ondelete="CASCADE"))
     event_type=Column(Enum(
-        EventType,"event_type_enum"
+        EventType,name="event_type_enum"
     ),nullable=False, default="apicall")
     device_type=Column(Text,nullable=True, default="phone")
     __table_args__=(
@@ -165,10 +165,10 @@ class SupportTickets(Base):
     customer_id=Column(UUID(as_uuid=True),ForeignKey("customers.customer_id",ondelete="CASCADE"))
     created_at=Column(DateTime,nullable=False, default=datetime.utcnow)
     issue_type=Column(Enum(
-        IssueType,"issue_type_enum"
+        IssueType,name="issue_type_enum"
     ),nullable=False)
     priority=Column(Enum(
-        Priority,"priority_enum"
+        Priority,name="priority_enum"
     ),nullable=False, default="low")
     resolution_time_hours=Column(Float,nullable=False)
     satisfaction_score=Column(Float,nullable=False)
