@@ -73,9 +73,9 @@ if __name__ == "__main__":
                 account_id=test_account.account_id
             ).first()
             if result:
-                logger.info(f"Successfully retrieved article: {result.title}")
+                logger.info(f"Successfully retrieved account: {result.account_id}")
             else:
-                logger.error("Failed to retrieve the test article")
+                logger.error("Failed to retrieve the test account")
 
     except Exception as e:
         logger.error(f"Test failed: {e}")
