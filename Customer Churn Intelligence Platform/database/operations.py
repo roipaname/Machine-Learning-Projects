@@ -195,3 +195,191 @@ def get_unpaid_invoices(account_id: str) -> List[BillingInvoices]:
     except Exception as e:
         logger.error("Failed to fetch unpaid invoices")
         raise
+
+def get_paid_invoices(account_id: str) -> List[BillingInvoices]:
+    try:
+        with db.get_db() as session:
+            return (
+                session.query(BillingInvoices)
+                .filter_by(account_id=account_id, paid=True)
+                .all()
+            )
+    except Exception as e:
+        logger.error("Failed to fetch paid invoices")
+        raise
+def create_support_ticket(ticket_data: Dict):
+    try:
+        with db.get_db() as session:
+            ticket = SupportTickets(**ticket_data)
+            session.add(ticket)
+            session.flush()
+            logger.success(f"Support ticket {ticket.ticket_id} created")
+            return ticket.ticket_id
+    except Exception as e:
+        logger.error("Failed to create support ticket")
+        raise
+
+
+def get_priority_tickets(customer_id: str,priority:str="high"):
+    try:
+        with db.get_db() as session:
+            return (
+                session.query(SupportTickets)
+                .filter_by(customer_id=customer_id, priority=priority)
+                .all()
+            )
+    except Exception as e:
+        logger.error(f"Failed to fetch {priority} priority tickets")
+        raise
+
+
+def count_usage_events(customer_id: str) -> int:
+    with db.get_db() as session:
+        return (
+            session.query(UsageEvents)
+            .filter_by(customer_id=customer_id)
+            .count()
+        )
+
+def avg_resolution_time(account_id: str) -> float:
+    with db.get_db() as session:
+        return (
+            session.query(SupportTickets.resolution_time_hours)
+            .join(Customers)
+            .filter(Customers.account_id == account_id)
+            .scalar()
+            or 0.0
+        )
+if __name__ == "__main__":
+    import uuid
+    from datetime import datetime, timedelta
+    from loguru import logger
+
+    logger.info("Starting manual DB function tests...")
+
+    # =========================
+    # TEST DATA
+    # =========================
+    account_id = uuid.uuid4()
+    customer_id = uuid.uuid4()
+
+    account_data = {
+        "account_id": account_id,
+        "company_name": "Paname AI",
+        "industry": "SaaS",
+        "company_size": 12,
+        "contract_type": "monthly",
+        "account_tier": "gold",
+    }
+
+    customer_data = {
+        "customer_id": customer_id,
+        "account_id": account_id,
+        "first_name": "Clarence",
+        "last_name": "Ebebe",
+        "email": f"clarence.{uuid.uuid4()}@paname.ai",
+        "country": "ZA",
+        "acquisition_channel": "organic",
+        "customer_segment": "SMB",
+    }
+
+    subscription_data = {
+        "account_id": account_id,
+        "plan_name": "pro",
+        "monthlyfee": 499.99,
+        "start_date": datetime.utcnow(),
+        "end_date": datetime.utcnow() + timedelta(days=365),
+        "status": "active",
+    }
+
+    invoice_data = {
+        "account_id": account_id,
+        "invoice_date": datetime.utcnow(),
+        "paid": False,
+        "days_late": 5,
+    }
+
+    ticket_data = {
+        "customer_id": customer_id,
+        "issue_type": "billing",
+        "priority": "high",
+        "resolution_time_hours": 48.5,
+        "satisfaction_score": 2.0,
+    }
+
+    usage_events = [
+        {
+            "customer_id": customer_id,
+            "event_type": "apicall",
+            "device_type": "web",
+        }
+        for _ in range(20)
+    ]
+
+    try:
+        # =========================
+        # ACCOUNT
+        # =========================
+        logger.info("Testing account creation...")
+        insert_new_account(account_data)
+
+        exists = check_if_account_exist(account_id)
+        logger.info(f"Account exists: {exists}")
+
+        accounts = get_accounts_by_company_name("Paname AI")
+        logger.info(f"Accounts fetched by name: {len(accounts)}")
+
+        # =========================
+        # CUSTOMER
+        # =========================
+        logger.info("Testing customer creation...")
+        insert_customer(customer_data)
+
+        customers = get_customers_by_account(account_id)
+        logger.info(f"Customers under account: {len(customers)}")
+
+        email_exists = check_customer_email_exists(customer_data["email"])
+        logger.info(f"Customer email exists: {email_exists}")
+
+        # =========================
+        # SUBSCRIPTION
+        # =========================
+        logger.info("Testing subscription creation...")
+        create_subscription(subscription_data)
+
+        active_sub = get_active_subscription(account_id)
+        logger.info(
+            f"Active subscription plan: {active_sub.plan_name if active_sub else 'None'}"
+        )
+
+        # =========================
+        # USAGE EVENTS
+        # =========================
+        logger.info("Testing bulk usage events insert...")
+        bulk_insert_usage_events(usage_events)
+
+        usage_count = count_usage_events(customer_id)
+        logger.info(f"Total usage events: {usage_count}")
+
+        # =========================
+        # BILLING
+        # =========================
+        logger.info("Testing billing invoice...")
+        insert_invoice(invoice_data)
+
+        unpaid = get_unpaid_invoices(account_id)
+        logger.info(f"Unpaid invoices: {len(unpaid)}")
+
+        # =========================
+        # SUPPORT TICKETS
+        # =========================
+        logger.info("Testing support ticket...")
+        create_support_ticket(ticket_data)
+
+        high_priority = get_priority_tickets(customer_id)
+        logger.info(f"High priority tickets: {len(high_priority)}")
+
+        logger.success("ALL MANUAL DB TESTS COMPLETED SUCCESSFULLY")
+
+    except Exception as e:
+        logger.exception("MANUAL DB TEST FAILED")
