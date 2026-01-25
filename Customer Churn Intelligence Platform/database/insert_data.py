@@ -4,12 +4,14 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from config.settings import DATA_PROCESSED_DIR
 from loguru import logger
-from database.operations import insert_new_account,insert_customer,create_subscription,create_support_ticket
+from database.operations import insert_new_account,insert_customer,create_subscription,create_support_ticket,bulk_insert_usage_events
 
 DATA_PROCESSED_CSV=DATA_PROCESSED_DIR /'csv'
 accounts_path=DATA_PROCESSED_CSV/ 'accounts.csv'
 customer_path=DATA_PROCESSED_CSV/ 'customers.csv'
 subscription_path=DATA_PROCESSED_CSV / 'subscriptions.csv'
+support_path=DATA_PROCESSED_CSV / 'support_tickets.csv'
+usage_path=DATA_PROCESSED_CSV / 'usage_events.csv'
 
 def read_and_store_accounts(acc_path:Path):
     if not acc_path or not acc_path.exists():
@@ -59,7 +61,37 @@ def read_and_store_subs(subpath:Path):
             raise
         logger.success("Done inserting Subscriptions")
     
+def read_and_store_support(support_path:Path):
+    if not support_path or not support_path.exists():
+        logger.error("Path not passed or found")
+        raise
+    df= pd.read_csv(support_path)
+    print(df.info())
+    logger.info(f"inserting {len(df)} support into database")
 
+    for idx ,row in df.iterrows():
+        try:
+            create_support_ticket(row.to_dict())
+        except Exception as e:
+            logger.error(f"failed to insert support id {row['ticket_id']}")
+            raise
+        logger.success("Done inserting support")
+    
+def read_and_store_usages(usage_path:Path):
+    if not usage_path or not usage_path.exists():
+        logger.error("Path not passed or found")
+        raise
+    df= pd.read_csv(usage_path)
+    print(df.info())
+    usages=df.to_dict(orient='records')
+    logger.info(f"inserting {len(df)} usages into database")
+    try:
+       bulk_insert_usage_events(usages)
+    except Exception as e:
+        logger.error("failed to insert usages")
+        raise
+    logger.success("Done inserting usages")
+    
 
 #read_and_store_accounts(accounts_path)
 
