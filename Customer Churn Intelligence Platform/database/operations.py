@@ -1,6 +1,6 @@
 from loguru import logger
 from database.connection import DatabaseConnection
-from database.schemas import Accounts,Customers,Subscriptions,UsageEvents,BillingInvoices,SupportTickets
+from database.schemas import Accounts,Customers,Subscriptions,UsageEvents,BillingInvoices,SupportTickets,SubscriptionStatus
 from typing import List,Dict,Optional
 db=DatabaseConnection()
 
@@ -383,3 +383,13 @@ if __name__ == "__main__":
 
     except Exception as e:
         logger.exception("MANUAL DB TEST FAILED")
+
+
+def get_churned_accounts():
+    """
+    An account is churned if it has NO active subscription.
+    """
+
+    with db.get_db() as session:
+        active_subq=(session.query(Subscriptions).filter(Subscriptions.status==SubscriptionStatus.active,Subscriptions.end_date>= datetime.utcnow()).subquery())
+        
