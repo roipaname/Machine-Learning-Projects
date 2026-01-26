@@ -253,6 +253,61 @@ def avg_resolution_time(account_id: str) -> float:
             .scalar()
             or 0.0
         )
+    
+def get_churned_accounts():
+    """
+    An account is churned if it has NO active subscription.
+    """
+
+    with db.get_db() as session:
+        active_subq=(session.query(Subscriptions).filter(Subscriptions.status==SubscriptionStatus.active,Subscriptions.end_date>= datetime.utcnow()).subquery())
+        churned_accounts=(
+            session.query(Subscriptions.account_id,func.max(
+                Subscriptions.end_date).label("churn_date")).filter(
+                    not_(Subscriptions.account_id.in_(active_subq))
+                ).group_by(Subscriptions.account_id).all())
+
+        return churned_accounts
+
+
+def generate_customer_churn_labels():
+
+    with db.get_db() as session:
+        churned_accounts=get_churned_accounts()
+        if not churned_accounts:
+            logger.info("No Churned Accounst found.")
+            return
+        churned_account_map={
+            acc.account_id:acc.churn_date for acc in churned_accounts
+        }
+        customers=(
+            session.query(Customers).filter(Customers.account_id.in_(churned_account_map.keys())).all
+
+        )
+
+        for customer in customers:
+            churn_date=churned_account_map[customer.account_id]
+            exists=(
+                session.query(
+                    Churn_Labels
+                ).filter(Churn_Labels.customer_id==customer.customer_id).first()
+            )
+            if exists:
+                continue
+
+            label=Churn_Labels(
+                customer_id=customer.customer_id,
+                churned=True,
+                churn_date=churn_date,
+                churn_reason='Account subscription ended'
+            )
+
+            session.add(label)
+            session.flush()
+            inserted+=1
+        session.commit()
+        logger.success(f"Inserted {inserted} churn labels.")
+
 if __name__ == "__main__":
     import uuid
     from datetime import datetime, timedelta
@@ -388,56 +443,3 @@ if __name__ == "__main__":
         logger.exception("MANUAL DB TEST FAILED")
 
 
-def get_churned_accounts():
-    """
-    An account is churned if it has NO active subscription.
-    """
-
-    with db.get_db() as session:
-        active_subq=(session.query(Subscriptions).filter(Subscriptions.status==SubscriptionStatus.active,Subscriptions.end_date>= datetime.utcnow()).subquery())
-        churned_accounts=(
-            session.query(Subscriptions.account_id,func.max(
-                Subscriptions.end_date).label("churn_date")).filter(
-                    not_(Subscriptions.account_id.in_(active_subq))
-                ).group_by(Subscriptions.account_id).all())
-
-        return churned_accounts
-
-
-def generate_customer_churn_labels():
-
-    with db.get_db() as session:
-        churned_accounts=get_churned_accounts()
-        if not churned_accounts:
-            logger.info("No Churned Accounst found.")
-            return
-        churned_account_map={
-            acc.account_id:acc.churn_date for acc in churned_accounts
-        }
-        customers=(
-            session.query(Customers).filter(Customers.account_id.in_(churned_account_map.keys())).all
-
-        )
-
-        for customer in customers:
-            churn_date=churned_account_map[customer.account_id]
-            exists=(
-                session.query(
-                    Churn_Labels
-                ).filter(Churn_Labels.customer_id==customer.customer_id).first()
-            )
-            if exists:
-                continue
-
-            label=Churn_Labels(
-                customer_id=customer.customer_id,
-                churned=True,
-                churn_date=churn_date,
-                churn_reason='Account subscription ended'
-            )
-
-            session.add(label)
-            session.flush()
-            inserted+=1
-        session.commit()
-        logger.success(f"Inserted {inserted} churn labels.")
