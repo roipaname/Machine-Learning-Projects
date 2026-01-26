@@ -399,6 +399,14 @@ def get_churned_accounts():
             session.query(Subscriptions.account_id,func.max(
                 Subscriptions.end_date).label("churn_date")).filter(
                     not_(Subscriptions.account_id.in_(active_subq))
-                ).group_by(Subscriptions.account_id).all()
+                ).group_by(Subscriptions.account_id).all())
 
         return churned_accounts
+
+
+def generate_customer_churn_labels():
+
+    with db.get_db() as session:
+        churned-accounts=get_churned_accounts()
+        if not get_churned_accounts:
+            logger.info("No Churned Accounst found.")
