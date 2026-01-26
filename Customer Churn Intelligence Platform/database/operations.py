@@ -440,4 +440,4 @@ def generate_customer_churn_labels():
             session.flush()
             inserted+=1
         session.commit()
-        logger.info(f"Inserted {inserted} churn labels.")
+        logger.success(f"Inserted {inserted} churn labels.")
