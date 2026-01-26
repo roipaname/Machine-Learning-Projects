@@ -2,6 +2,9 @@ from loguru import logger
 from database.connection import DatabaseConnection
 from database.schemas import Accounts,Customers,Subscriptions,UsageEvents,BillingInvoices,SupportTickets,SubscriptionStatus
 from typing import List,Dict,Optional
+from sqlalchemy import func, and_, not_
+from sqlalchemy.orm import Session
+from datetime import datetime
 db=DatabaseConnection()
 
 def insert_new_account(account_data:Dict):
@@ -392,4 +395,10 @@ def get_churned_accounts():
 
     with db.get_db() as session:
         active_subq=(session.query(Subscriptions).filter(Subscriptions.status==SubscriptionStatus.active,Subscriptions.end_date>= datetime.utcnow()).subquery())
-        
+        churned_accounts=(
+            session.query(Subscriptions.account_id,func.max(
+                Subscriptions.end_date).label("churn_date")).filter(
+                    not_(Subscriptions.account_id.in_(active_subq))
+                ).group_by(Subscriptions.account_id).all()
+
+        return churned_accounts
