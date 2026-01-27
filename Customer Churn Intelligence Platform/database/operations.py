@@ -285,29 +285,34 @@ def get_churned_accounts():
 def generate_customer_churn_labels():
 
     with db.get_db() as session:
-        churned_accounts=get_churned_accounts()
+        churned_accounts = get_churned_accounts()
         if not churned_accounts:
-            logger.info("No Churned Accounst found.")
+            logger.info("No Churned Accounts found.")
             return
-        churned_account_map={
-            acc.account_id:acc.churn_date for acc in churned_accounts
+        
+        churned_account_map = {
+            acc.account_id: acc.churn_date for acc in churned_accounts
         }
-        customers=(
-            session.query(Customers).filter(Customers.account_id.in_(churned_account_map.keys())).all
-
+        
+        customers = (
+            session.query(Customers)
+            .filter(Customers.account_id.in_(churned_account_map.keys()))
+            .all()  # Added parentheses here
         )
 
+        inserted = 0  # Initialize counter
+        
         for customer in customers:
-            churn_date=churned_account_map[customer.account_id]
-            exists=(
-                session.query(
-                    Churn_Labels
-                ).filter(Churn_Labels.customer_id==customer.customer_id).first()
+            churn_date = churned_account_map[customer.account_id]
+            exists = (
+                session.query(Churn_Labels)
+                .filter(Churn_Labels.customer_id == customer.customer_id)
+                .first()
             )
             if exists:
                 continue
 
-            label=Churn_Labels(
+            label = Churn_Labels(
                 customer_id=customer.customer_id,
                 churned=True,
                 churn_date=churn_date,
@@ -316,7 +321,8 @@ def generate_customer_churn_labels():
 
             session.add(label)
             session.flush()
-            inserted+=1
+            inserted += 1
+            
         session.commit()
         logger.success(f"Inserted {inserted} churn labels.")
 
