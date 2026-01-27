@@ -137,9 +137,11 @@ class UsageEvents(Base):
         EventType,name="event_type_enum"
     ),nullable=False, default="apicall")
     device_type=Column(Text,nullable=True, default="phone")
+    timestamp=Column(DateTime, nullable=False, default=datetime.utcnow)
     __table_args__=(
         Index("idx_usage_events_event_type","event_type"),
-        Index("idx_usage_events_device_type","device_type")
+        Index("idx_usage_events_device_type","device_type"),
+        Index("idx_usage_events_timestamp","timestamp")
     )
 # =========================
 # BILLING INVOICES TABLE
