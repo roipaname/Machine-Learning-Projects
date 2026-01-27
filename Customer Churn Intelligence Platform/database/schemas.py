@@ -182,7 +182,7 @@ class SupportTickets(Base):
 class Churn_Labels(Base):
     __tablename__="churn_labels"
     churn_id=Column(UUID(as_uuid=True),primary_key=True,unique=True, default=uuid.uuid4)
-    customer_id=Column(UUID(as_uuid=True),ForeignKey("customer.customer_id",ondelete="CASCADE"),nullable=False)
+    customer_id=Column(UUID(as_uuid=True),ForeignKey("customers.customer_id",ondelete="CASCADE"),nullable=False)
     churned=Column(Boolean,default=False)
     churn_date=Column(DateTime, default=datetime.utcnow, nullable=False)
     churn_reason=Column(Text,nullable=True)
