@@ -260,15 +260,27 @@ def get_churned_accounts():
     """
 
     with db.get_db() as session:
-        active_subq=(session.query(Subscriptions).filter(Subscriptions.status==SubscriptionStatus.active,Subscriptions.end_date>= datetime.utcnow()).subquery())
-        churned_accounts=(
-            session.query(Subscriptions.account_id,func.max(
-                Subscriptions.end_date).label("churn_date")).filter(
-                    not_(Subscriptions.account_id.in_(active_subq))
-                ).group_by(Subscriptions.account_id).all())
+        # Only select account_id for the subquery
+        active_subq = (
+            session.query(Subscriptions.account_id)
+            .filter(
+                Subscriptions.status == SubscriptionStatus.active,
+                Subscriptions.end_date >= datetime.utcnow()
+            )
+            .subquery()
+        )
+        
+        churned_accounts = (
+            session.query(
+                Subscriptions.account_id,
+                func.max(Subscriptions.end_date).label("churn_date")
+            )
+            .filter(not_(Subscriptions.account_id.in_(active_subq)))
+            .group_by(Subscriptions.account_id)
+            .all()
+        )
 
         return churned_accounts
-
 
 def generate_customer_churn_labels():
 
