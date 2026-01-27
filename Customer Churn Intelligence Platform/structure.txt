@@ -444,14 +444,14 @@ Document processing: LangChain, PyPDF2, python-docx
 
 AI/ML:
 
-Claude (Anthropic API) for AI Advisor reasoning
+finetuned model for AI Advisor reasoning
 Sentence-transformers for document embeddings
 Pydantic for output validation
 FAISS for efficient similarity search
 
 Frontend:
 
-React, TypeScript, Tailwind CSS
+Streamlit
 Recharts for visualizations
-Real-time updates via WebSockets
+Real-time updates 
 PDF viewer for strategy document preview

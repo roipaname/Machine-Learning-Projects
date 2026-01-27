@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from config.settings import DATA_PROCESSED_DIR
 from loguru import logger
-from database.operations import insert_new_account,insert_customer,create_subscription,create_support_ticket,bulk_insert_usage_events,insert_invoice,get_churned_accounts
+from database.operations import insert_new_account,insert_customer,create_subscription,create_support_ticket,bulk_insert_usage_events,insert_invoice,generate_customer_churn_labels
 
 DATA_PROCESSED_CSV=DATA_PROCESSED_DIR /'csv'
 accounts_path=DATA_PROCESSED_CSV/ 'accounts.csv'
@@ -119,4 +119,4 @@ def read_and_store_invoices(invoice_path:Path):
 #read_and_store_invoices(invoice_path)
 
 
-print(get_churned_accounts())
+print(generate_customer_churn_labels())
