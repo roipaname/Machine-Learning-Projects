@@ -61,7 +61,7 @@ def extract_customer_features(customer_id: str, as_of_date: datetime = None) -> 
         if subscription:
             features['plan_name'] = subscription.plan_name.value
             features['monthly_fee'] = subscription.monthlyfee
-            features['days_until_renewal'] = (subscription.end_date - as_of_date).days
+            features['days_until_renewal'] = max((subscription.end_date - as_of_date).days, 0)
             features['contract_length_days'] = (subscription.end_date - subscription.start_date).days
         else:
             features['plan_name'] = None
@@ -71,10 +71,10 @@ def extract_customer_features(customer_id: str, as_of_date: datetime = None) -> 
 
         # === USAGE FEATURES ===
         # Total usage events in different windows
-        usage_count_30d=session.query(func.count(UsageEvents.event_id).filter(
+        usage_count_30d=session.query(func.count(UsageEvents.event_id)).filter(
             UsageEvents.customer_id==customer_id,
             UsageEvents.timestamp>=date_30d
-        )).scalar() or 0
+        ).scalar() or 0
 
         usage_count_60d=session.query(func.count(UsageEvents.event_id).filter(
             UsageEvents.customer_id==customer_id,
@@ -145,4 +145,18 @@ def extract_customer_features(customer_id: str, as_of_date: datetime = None) -> 
         
         return features
 
+
+def extract_all_customers_features(as_of_date:datetime=None)->pd.DataFrame:
+    with db.get_db() as session:
+        customers_id=session.query(Customers.customer_id).all()
+
+
+        feature_list=[]
+        for (custid,) in customers_id:
+            features=extract_customer_features(custid,as_of_date)
+            if features:
+                feature_list.append(features)
+        df=pd.DataFrame(feature_list)
+        logger.success(f"Extracted features for {len(df)} customers")
+        return df
 
