@@ -1,5 +1,5 @@
 from database.connection import DatabaseConnection
-from database.schemas import Customers,Subscriptions,UsageEvents,SupportTickets,Accounts
+from database.schemas import Customers,Subscriptions,UsageEvents,SupportTickets,Accounts,BillingInvoices
 from datetime import datetime,timedelta
 import pandas as pd
 from loguru import logger
@@ -89,4 +89,60 @@ def extract_customer_features(customer_id: str, as_of_date: datetime = None) -> 
         features['usage_count_30d'] = usage_count_30d
         features['usage_count_60d'] = usage_count_60d
         features['usage_count_90d'] = usage_count_90d
+
+        # Usage decline (key churn signal!)
+        if usage_count_60d > 0:
+            features['usage_decline_30d_vs_60d'] = (usage_count_60d - usage_count_30d) / usage_count_60d
+        else:
+            features['usage_decline_30d_vs_60d'] = 0
+
+        last_event=session.query(func.max(UsageEvents.timestamp)).filter(
+            UsageEvents.customer_id==customer_id
+        ).scalar()
+
+
+        features['days_since_last_activity'] = (as_of_date - last_event).days if last_event else 999
+        # === SUPPORT FEATURES ===
+        tickets_30d = session.query(func.count(SupportTickets.ticket_id)).filter(
+            SupportTickets.customer_id == customer_id,
+            SupportTickets.created_at >= date_30d
+        ).scalar() or 0
+        
+        high_priority_tickets = session.query(func.count(SupportTickets.ticket_id)).filter(
+            SupportTickets.customer_id == customer_id,
+            SupportTickets.priority == 'high',
+            SupportTickets.created_at >= date_90d
+        ).scalar() or 0
+        
+        avg_resolution_time = session.query(func.avg(SupportTickets.resolution_time_hours)).filter(
+            SupportTickets.customer_id == customer_id,
+            SupportTickets.created_at >= date_90d
+        ).scalar() or 0
+        
+        avg_satisfaction = session.query(func.avg(SupportTickets.satisfaction_score)).filter(
+            SupportTickets.customer_id == customer_id,
+            SupportTickets.created_at >= date_90d
+        ).scalar() or 0
+        
+        features['support_tickets_30d'] = tickets_30d
+        features['high_priority_tickets_90d'] = high_priority_tickets
+        features['avg_resolution_time_hours'] = float(avg_resolution_time) if avg_resolution_time else 0
+        features['avg_satisfaction_score'] = float(avg_satisfaction) if avg_satisfaction else 0
+        
+        # === BILLING FEATURES ===
+        unpaid_invoices = session.query(func.count(BillingInvoices.invoice_id)).filter(
+            BillingInvoices.account_id == customer.account_id,
+            BillingInvoices.paid == False
+        ).scalar() or 0
+        
+        avg_days_late = session.query(func.avg(BillingInvoices.days_late)).filter(
+            BillingInvoices.account_id == customer.account_id,
+            BillingInvoices.days_late > 0
+        ).scalar() or 0
+        
+        features['unpaid_invoices'] = unpaid_invoices
+        features['avg_days_late'] = float(avg_days_late) if avg_days_late else 0
+        
+        return features
+
 
