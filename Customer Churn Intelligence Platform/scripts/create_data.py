@@ -99,6 +99,11 @@ usage_events = pd.DataFrame({
     ),
     "device_type": np.random.choice(
         usage["Operating System"], N_EVENTS
+    ),
+    "timestamp":pd.to_datetime(
+        np.random.choice(
+            pd.date_range("2017-01-01", "2024-01-01"), N_EVENTS
+        )
     )
 })
 
