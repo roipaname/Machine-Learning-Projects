@@ -33,7 +33,7 @@ accounts = pd.DataFrame({
     "account_tier": None,
     "created_at": pd.to_datetime(
         np.random.choice(
-            pd.date_range("2017-01-01", "2024-01-01"), N_ACCOUNTS
+            pd.date_range("2017-01-01", "2026-01-01"), N_ACCOUNTS
         )
     )
 })
@@ -55,7 +55,7 @@ customers = pd.DataFrame({
     "last_name": [fake.last_name() for _ in range(N_CUSTOMERS)],
     "email": [fake.unique.email() for _ in range(N_CUSTOMERS)],
     "country": np.random.choice(["US", "UK", "DE", "ZA"], N_CUSTOMERS),
-    "signup_date": pd.to_datetime("2024-01-01") -
+    "signup_date": pd.to_datetime("2025-01-01") -
         pd.to_timedelta(telco_sample["tenure"].astype(int) * 30, unit="D"),
     "acquisition_channel": np.random.choice(
         ["ads", "referral", "sales", "organic"], N_CUSTOMERS
@@ -102,7 +102,7 @@ usage_events = pd.DataFrame({
     ),
     "timestamp":pd.to_datetime(
         np.random.choice(
-            pd.date_range("2017-01-01", "2024-01-01"), N_EVENTS
+            pd.date_range("2017-01-01", "2026-01-01"), N_EVENTS
         )
     )
 })
