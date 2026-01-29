@@ -109,14 +109,14 @@ def read_and_store_invoices(invoice_path:Path):
             raise
     logger.success("Done inserting invoices") 
 
-#read_and_store_accounts(accounts_path)
+read_and_store_accounts(accounts_path)
 
-#read_and_store_cusomers(customer_path)
+read_and_store_cusomers(customer_path)
 
-#read_and_store_subs(subscription_path)
-#read_and_store_support(support_path)
-#read_and_store_usages(usage_path)
-#read_and_store_invoices(invoice_path)
+read_and_store_subs(subscription_path)
+read_and_store_support(support_path)
+read_and_store_usages(usage_path)
+read_and_store_invoices(invoice_path)
 
 
 print(generate_customer_churn_labels())
