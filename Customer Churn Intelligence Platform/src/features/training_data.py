@@ -26,9 +26,12 @@ def build_training_dataset()->pd.DataFrame:
 
         training_df=features_df.merge(labels_df,on='customer_id',how='left')
 
+
+        # Fill missing churn labels (customers who haven't churned)
         training_df['churned']=training_df['churned'].fillna(False)
 
         logger.success(f"Built training dataset with {len(training_df)} records")
+        # Save to parquet (feature store simulation)
         training_df.to_parquet(Path(DATA_PROCESSED_DIR)/'training_features.parquet',index=False)
 
         return training_df
