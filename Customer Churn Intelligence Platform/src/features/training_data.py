@@ -23,3 +23,11 @@ def build_training_dataset()->pd.DataFrame:
             'churn_date':label.churn_date
 
         }] for label in labels)
+
+        training_df=features_df.merge(labels_df,on='customer_id',how='left')
+
+        training_df['churned']=training_df['churned'].fillna(False)
+
+        logger.success(f"Built training dataset with {len(training_df)} records")
+
+        return training_df
