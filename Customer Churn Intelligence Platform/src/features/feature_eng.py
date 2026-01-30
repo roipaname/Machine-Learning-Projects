@@ -107,7 +107,9 @@ def extract_customer_features(customer_id: str, as_of_date: datetime = None) -> 
             SupportTickets.customer_id == customer_id,
             SupportTickets.created_at >= date_30d
         ).scalar() or 0
+
         
+
         high_priority_tickets = session.query(func.count(SupportTickets.ticket_id)).filter(
             SupportTickets.customer_id == customer_id,
             SupportTickets.priority == 'high',
