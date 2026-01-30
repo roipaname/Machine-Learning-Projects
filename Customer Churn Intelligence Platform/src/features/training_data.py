@@ -29,5 +29,6 @@ def build_training_dataset()->pd.DataFrame:
         training_df['churned']=training_df['churned'].fillna(False)
 
         logger.success(f"Built training dataset with {len(training_df)} records")
+        training_df.to_parquet(Path(DATA_PROCESSED_DIR)/'training_features.parquet',index=False)
 
         return training_df
