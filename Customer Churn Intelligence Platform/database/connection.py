@@ -42,6 +42,8 @@ class DatabaseConnection:
         finally:
             session.close()
 
+            
+
 if __name__ == "__main__":
     import uuid
     from datetime import datetime
