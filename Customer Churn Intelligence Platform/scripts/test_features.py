@@ -6,6 +6,8 @@ from loguru import logger
 
 if __name__=="__main__":
     logger.info("Testing dataset builder")
+    #Testuing Feature Exraction
+
 
     features_df=extract_all_customers_features()
     print(features_df.head())
