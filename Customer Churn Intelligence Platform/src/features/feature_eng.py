@@ -1,5 +1,5 @@
 from database.connection import DatabaseConnection
-from database.schemas import Customers,Subscriptions,UsageEvents,SupportTickets,Accounts,BillingInvoices
+from database.schemas import Customers,Subscriptions,UsageEvents,SupportTickets,Accounts,BillingInvoices,Priority
 from datetime import datetime,timedelta
 import pandas as pd
 from loguru import logger
@@ -76,15 +76,15 @@ def extract_customer_features(customer_id: str, as_of_date: datetime = None) -> 
             UsageEvents.timestamp>=date_30d
         ).scalar() or 0
 
-        usage_count_60d=session.query(func.count(UsageEvents.event_id).filter(
+        usage_count_60d=session.query(func.count(UsageEvents.event_id)).filter(
             UsageEvents.customer_id==customer_id,
             UsageEvents.timestamp>=date_60d
-        )).scalar() or 0
+        ).scalar() or 0
 
-        usage_count_90d=session.query(func.count(UsageEvents.event_id).filter(
+        usage_count_90d=session.query(func.count(UsageEvents.event_id)).filter(
             UsageEvents.customer_id==customer_id,
             UsageEvents.timestamp>=date_90d
-        )).scalar() or 0
+        ).scalar() or 0
 
         features['usage_count_30d'] = usage_count_30d
         features['usage_count_60d'] = usage_count_60d
@@ -112,7 +112,7 @@ def extract_customer_features(customer_id: str, as_of_date: datetime = None) -> 
 
         high_priority_tickets = session.query(func.count(SupportTickets.ticket_id)).filter(
             SupportTickets.customer_id == customer_id,
-            SupportTickets.priority == 'high',
+            SupportTickets.priority == Priority.high,
             SupportTickets.created_at >= date_90d
         ).scalar() or 0
         
@@ -147,18 +147,21 @@ def extract_customer_features(customer_id: str, as_of_date: datetime = None) -> 
         
         return features
 
+def extract_all_customers_features(as_of_date=None) -> pd.DataFrame:
+    if as_of_date is None:
+        as_of_date = datetime.utcnow()
 
-def extract_all_customers_features(as_of_date:datetime=None)->pd.DataFrame:
     with db.get_db() as session:
-        customers_id=session.query(Customers.customer_id).all()
+        customers = session.query(Customers.customer_id).all()
 
-
-        feature_list=[]
-        for (custid,) in customers_id:
-            features=extract_customer_features(custid,as_of_date)
+        feature_list = []
+        for (custid,) in customers:
+            features = extract_customer_features(custid, as_of_date)
             if features:
                 feature_list.append(features)
-        df=pd.DataFrame(feature_list)
-        logger.success(f"Extracted features for {len(df)} customers")
-        return df
+
+    df = pd.DataFrame(feature_list)
+    logger.success(f"Extracted features for {len(df)} customers")
+    return df
+
 

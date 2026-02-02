@@ -17,12 +17,14 @@ def build_training_dataset()->pd.DataFrame:
 
     with db.get_db() as session:
         labels=session.query(Churn_Labels).all()
-        labels_df=pd.DataFrame([{
-            'customer_id':label.customer_id,
+        labels_df=pd.DataFrame([
+            {
+            'customer_id':str(label.customer_id),
             'churned':label.churned,
             'churn_date':label.churn_date
 
-        }] for label in labels)
+        } for label in labels
+        ] )
 
         training_df=features_df.merge(labels_df,on='customer_id',how='left')
 
