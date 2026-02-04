@@ -76,6 +76,28 @@ class ChurnPredictor:
             self.params.update(custom_params)
         self.model=self.config['class'](**self.params)
         self.is_trained=False
-        self.sclaer=StandardScaler()
+        self.scaler=StandardScaler()
         self.label_encoder=LabelEncoder()
         self.training_date=None
+        self.training_date=None
+        self.training_samples=0
+        self.num_classes=0
+        self.class_names=[]
+        self.feature_dim=0
+        logger.success(f"Initialized {classifier_name} classifier")
+    def fit(self,X:pd.DataFrame,y:pd.Series):
+
+        X_Scaled=self.scaler.fit_transform(X)
+        y_encoded=self.label_encoder.fit_transform(y)
+
+        try:
+            self.model.fit(X_Scaled,y_encoded)
+            self.is_trained=True
+            self.training_samples=len(X)
+            self.num_classes=len(np.unique(y_encoded))
+            self.class_names=self.label_encoder.classes_.tolist()
+            self.feature_dim=X.shape[1]
+            logger.success(f"Model trained on {self.training_samples} samples with {self.feature_dim} features")
+        except Exception as e:
+            logger.error(f"Error during model training: {e}")
+            raise e
