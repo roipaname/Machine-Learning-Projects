@@ -69,3 +69,13 @@ class ChurnPredictor:
     def __init__(self,classifier_name:str='random_forest',custom_params:Optional[Dict]=None):
         if classifier_name not in self.CLASSIFIERS:
             logger.error(f"Classifier {classifier_name} not recognized. Availble:{list(self.CLASSIFIERS.keys())}")
+            raise ValueError("Invalid classifier name")
+        self.config=self.CLASSIFIERS[classifier_name]
+        self.params=self.config['paramss']
+        if custom_params:
+            self.params.update(custom_params)
+        self.model=self.config['class'](**self.params)
+        self.is_trained=False
+        self.sclaer=StandardScaler()
+        self.label_encoder=LabelEncoder()
+        self.training_date=None
