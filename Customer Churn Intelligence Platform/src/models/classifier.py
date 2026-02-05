@@ -10,7 +10,7 @@ import joblib
 import shap
 from loguru import logger
 import numpy as np
-from typing import Dict,Optional
+from typing import Dict,Optional,List,Tuple
 from datetime import datetime
 
 class ChurnPredictor:
@@ -150,6 +150,28 @@ class ChurnPredictor:
         except Exception as e:
             logger.error(f"Error during probability prediction: {e}")
             raise e
+    def predict_with_confidence(self,X:pd.DataFrame,threshold:float=0.5)->List[Tuple[str,float]]:
+        """
+        Predict with confidence scores.
         
+        Args:
+            X: FDataFrame (n_samples, n_features)
+            threshold: Minimum confidence for prediction (else return 'uncertain')
+            
+        Returns:
+            List of (predicted_label, confidence) tuples
+        """
+        probas=self.predict_proba(X)
+        max_probas=probas.max(axis=1)
+        predictions=self.predict(X)
+        results=[]
+
+        for conf,label in zip(max_probas,predictions):
+            if conf>=threshold:
+                results.append((label,conf))
+            else:
+                results.append(('uncertain',conf))
+        return results
+
 
     
