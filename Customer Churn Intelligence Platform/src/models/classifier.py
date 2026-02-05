@@ -89,6 +89,33 @@ class ChurnPredictor:
         self.class_names=[]
         self.feature_dim=0
         logger.success(f"Initialized {classifier_name} classifier")
+    def prepare_data(self, df: pd.DataFrame):
+        """
+        Prepare features for ML training
+        """
+        # Separate features and target
+        X = df.drop(['customer_id', 'churned', 'churn_date'], axis=1, errors='ignore')
+        y = df['churned'].astype(int)
+        
+        # Handle categorical features
+        categorical_cols = X.select_dtypes(include=['object']).columns
+        for col in categorical_cols:
+            le = LabelEncoder()
+            X[col] = le.fit_transform(X[col].astype(str))
+            self.label_encoders[col] = le
+        
+        # Handle missing values
+        X = X.fillna(X.median())
+        
+        # Store feature names
+        self.feature_names = X.columns.tolist()
+        
+        # Scale features
+        X_scaled = self.scaler.fit_transform(X)
+        X_scaled = pd.DataFrame(X_scaled, columns=self.feature_names)
+        
+        return X_scaled, y
+    
     def fit(self,X:pd.DataFrame,y:pd.Series,validate:bool=False):
         if X.shape[0]!=len(y):
             raise ValueError("X and y must have same number of samples")
@@ -261,7 +288,59 @@ class ChurnPredictor:
         except Exception as e:
             logger.error(f"Error during hyperparameter tuning: {e}")
             raise e
+    def get_feature_importance_basic(self, top_n: int = 20) -> Dict[str, List[float]]:
+        """
+        Get feature importance scores (model-specific).
         
+        Args:
+            top_n: Number of top features per class
+            
+        Returns:
+            Dictionary mapping class names to feature importance scores
+        """
+        if not self.is_trained:
+            raise ValueError("Model must be trained first")
+        
+        # Only certain models have interpretable coefficients
+        if not hasattr(self.classifier, 'coef_'):
+            logger.warning(f"{self.classifier_type} does not have interpretable coefficients")
+            return {}
+        
+        coef = self.classifier.coef_
+        
+        # Get top features per class
+        importance = {}
+        for idx, class_name in enumerate(self.class_names):
+            class_coef = coef[idx] if len(coef.shape) > 1 else coef
+            top_indices = np.argsort(np.abs(class_coef))[-top_n:][::-1]
+            top_values = class_coef[top_indices]  # <-- actual coefficients
+            importance[class_name] = top_values.tolist()  # store as list of floats
+        
+        return importance
+    def get_feature_importance_shap(self,X:pd.DataFrame, top_n: int = 20) -> Dict[str, List[float]]:
+        """
+        Get feature importance scores using SHAP values.
+        
+        Args:
+            X: Feature matrix (unscaled)
+            top_n: Number of top features per class
+            
+        Returns:
+            Dictionary mapping class names to SHAP importance scores
+        """
+        if not  self.trained:
+            raise ValueError("Model must be trained first")
+        explainer=shap.TreeExplainer(self.model) if self.classifier_type in ['random_forest','gradient_boosting','xgboost'] else shap.LinearExplainer(self.model,X)
+        shap_values = explainer.shap_values(X)
 
-
-    
+        # For binary classification
+        if isinstance(shap_values, list):
+            shap_values = shap_values[1]
+        
+        feature_importance = pd.DataFrame({
+            'feature': self.feature_names,
+            'importance': np.abs(shap_values).mean(axis=0)
+        }).sort_values('importance', ascending=False)
+        
+        logger.success("SHAP analysis complete")
+        return shap_values, feature_importance
