@@ -11,6 +11,8 @@ import shap
 from loguru import logger
 import numpy as np
 from typing import Dict,Optional
+from datetime import datetime
+
 class ChurnPredictor:
     CLASSIFIERS={
         'random_forest':{
@@ -85,10 +87,15 @@ class ChurnPredictor:
         self.class_names=[]
         self.feature_dim=0
         logger.success(f"Initialized {classifier_name} classifier")
-    def fit(self,X:pd.DataFrame,y:pd.Series):
+    def fit(self,X:pd.DataFrame,y:pd.Series,validate:bool=False):
+        if X.shape[0]!=len(y):
+            raise ValueError("X and y must have same number of samples")
 
         X_Scaled=self.scaler.fit_transform(X)
         y_encoded=self.label_encoder.fit_transform(y)
+        if validate:
+            cv_scores=self._cross_validate(X_Scaled,y_encoded)
+            logger.info(f"Cross-validation scores: {cv_scores}")
 
         try:
             self.model.fit(X_Scaled,y_encoded)
@@ -97,7 +104,24 @@ class ChurnPredictor:
             self.num_classes=len(np.unique(y_encoded))
             self.class_names=self.label_encoder.classes_.tolist()
             self.feature_dim=X.shape[1]
+            self.training_date=datetime.utcnow()
+            logger.info(f"  - Features: {self.feature_dim}")
+            logger.info(f"  - Classes: {self.num_classes}")
+            logger.info(f"  - Class distribution: {np.bincount(y_encoded)}")
             logger.success(f"Model trained on {self.training_samples} samples with {self.feature_dim} features")
         except Exception as e:
             logger.error(f"Error during model training: {e}")
             raise e
+        
+    def predict(self,X:pd.DataFrame)->np.ndarray:
+        if not self.is_trained:
+            logger.error("Model is not yet trained.Call fit() before predict")
+            raise ValueError("Model not trained")
+        X_scaled=self.scaler.transform(X)
+        try:
+            predictions=self.model.predict(X_scaled)
+            return self.label_encoder.inverse_transform(predictions)
+        except Exception as e:
+            logger.error(f"Error during prediction {e}")
+            raise e
+    
