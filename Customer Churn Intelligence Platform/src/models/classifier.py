@@ -1,6 +1,6 @@
 from sklearn.ensemble import RandomForestClassifier,GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report,confusion_matrix,roc_auc_score,precision_recall_curve
+from sklearn.metrics import classification_report,confusion_matrix,roc_auc_score,precision_recall_curve,accuracy_score
 from sklearn.preprocessing import StandardScaler,LabelEncoder
 from xgboost import XGBClassifier
 import pandas as pd
@@ -172,6 +172,34 @@ class ChurnPredictor:
             else:
                 results.append(('uncertain',conf))
         return results
+    
+    def evaluate(self,X:pd.DataFrame,y:pd.Series)->Dict:
+        if not self.is_trained:
+            logger.error("Model is not yet trained.Call fit() before evaluate")
+            raise ValueError("Model not trained")
+        y_pred=self.predict(X)
+        y_proba=self.predict_proba(X)[:,1] if self.num_classes==2 else None
+        report=classification_report(y,y_pred,output_dict=True)
+        conf_matrix=confusion_matrix(y,y_pred).tolist()
+        auc_score=roc_auc_score(y,self.predict_proba(X)[:,1]) if self.num_classes==2 else None
+        precision,recall,_=precision_recall_curve(y,y_proba) if self.num_classes==2 else (None,None,None)
+        accuracy_scores=accuracy_score(y,y_pred)
+
+        evaluation_results={
+            'classification_report':report,
+            'confusion_matrix':conf_matrix,
+            'roc_auc_score':auc_score,
+            'precision_recall_curve':{
+                'precision':precision.tolist() if precision is not None else None,
+                'recall':recall.tolist() if recall is not None else None
+            },
+            'accuracy_score':accuracy_scores
+        }
+        logger.success(
+            f"Evaluation complete - Accuracy: {accuracy_scores:.4f}"
+        )
+        
+        return evaluation_results
 
 
     
