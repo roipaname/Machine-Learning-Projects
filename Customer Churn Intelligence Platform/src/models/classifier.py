@@ -2,15 +2,16 @@ from sklearn.ensemble import RandomForestClassifier,GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report,confusion_matrix,roc_auc_score,precision_recall_curve,accuracy_score
 from sklearn.preprocessing import StandardScaler,LabelEncoder
+from sklearn.model_selection import GridSearchCV,cross_val_score
 from xgboost import XGBClassifier
 import pandas as pd
-from config.settings import RANDOM_STATE
+from config.settings import RANDOM_STATE,CV_FOLDS
 from src.features.training_data import build_training_dataset
 import joblib
 import shap
 from loguru import logger
 import numpy as np
-from typing import Dict,Optional,List,Tuple
+from typing import Dict,Optional,List,Tuple,Any
 from datetime import datetime
 
 class ChurnPredictor:
@@ -77,6 +78,7 @@ class ChurnPredictor:
         if custom_params:
             self.params.update(custom_params)
         self.model=self.config['class'](**self.params)
+        self.classifier_type=classifier_name
         self.is_trained=False
         self.scaler=StandardScaler()
         self.label_encoder=LabelEncoder()
@@ -200,6 +202,66 @@ class ChurnPredictor:
         )
         
         return evaluation_results
+    def _cross_validate(self,X:np.ndarray,y:np.ndarray,cv:int=CV_FOLDS)-> Dict[str, float]:
+        """
+        Perform cross-validation.
+        
+        Args:
+            X: Feature matrix
+            y: Encoded labels
+            
+        Returns:
+            Dictionary with mean and std of CV scores
+        """
+        try:
+            cv_score=cross_val_score(self.model,X,y,cv=cv,scoring='accuracy')
+            return{
+                'mean_cv_score':cv_score.mean(),
+                'std_cv_score':cv_score.std(),
+                'scores': cv_score.tolist()   
+            }
+        except Exception as e:
+            logger.error(f"Error during cross-validation: {e}")
+            raise e
+        
+
+    def hyperparameter_tuning(self,X:pd.DataFrame,y:pd.Series,cv:int=CV_FOLDS)->Dict[str,Any]:
+        """
+        Perform grid search for hyperparameter tuning.
+        
+        Args:
+            X: Feature matrix
+            y: Target labels
+            cv: Number of cross-validation folds
+            
+        Returns:
+            Dictionary with best parameters and scores
+        """
+        logger.info(f"Starting hyperparameter tuning for {self.classifier_type}...")
+        y_encoded=self.label_encoder.fit_transform(y)
+        X_scaled=self.scaler.fit_transform(X)
+        grid_params=self.config.get('grid_params',{})
+        if not grid_params:
+            logger.warning("No grid parameters defined for this classifier. Skipping tuning.")
+            return {}
+        
+        try:
+            grid_search=GridSearchCV(estimator=self.config['class'](**self.params),param_grid=grid_params,cv=cv,scoring='accuracy',verbose=1,n_jobs=-1)
+            grid_search.fit(X_scaled,y_encoded)
+            self.model=grid_search.best_estimator_
+            self.is_trained=True
+            self.training_date=datetime.utcnow()
+            results={
+                'best_params':grid_search.best_params_,
+                'best_score':grid_search.best_score_,
+                'cv_results':grid_search.cv_results_
+            }
+            logger.success(f"Hyperparameter tuning complete. Best Score: {results['best_score']:.4f}")
+            return results
+        except Exception as e:
+            logger.error(f"Error during hyperparameter tuning: {e}")
+            raise e
+        
 
 
     
