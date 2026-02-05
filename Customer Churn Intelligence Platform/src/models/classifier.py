@@ -74,7 +74,7 @@ class ChurnPredictor:
             logger.error(f"Classifier {classifier_name} not recognized. Availble:{list(self.CLASSIFIERS.keys())}")
             raise ValueError("Invalid classifier name")
         self.config=self.CLASSIFIERS[classifier_name]
-        self.params=self.config['paramss']
+        self.params=self.config['params']
         if custom_params:
             self.params.update(custom_params)
         self.model=self.config['class'](**self.params)
@@ -88,6 +88,8 @@ class ChurnPredictor:
         self.num_classes=0
         self.class_names=[]
         self.feature_dim=0
+        self.label_encoders = {}
+
         logger.success(f"Initialized {classifier_name} classifier")
     def prepare_data(self, df: pd.DataFrame):
         """
@@ -302,11 +304,11 @@ class ChurnPredictor:
             raise ValueError("Model must be trained first")
         
         # Only certain models have interpretable coefficients
-        if not hasattr(self.classifier, 'coef_'):
+        if not hasattr(self.model, 'coef_'):
             logger.warning(f"{self.classifier_type} does not have interpretable coefficients")
             return {}
         
-        coef = self.classifier.coef_
+        coef = self.model.coef_
         
         # Get top features per class
         importance = {}
@@ -328,10 +330,15 @@ class ChurnPredictor:
         Returns:
             Dictionary mapping class names to SHAP importance scores
         """
-        if not  self.trained:
+        if not  self.is_trained:
             raise ValueError("Model must be trained first")
-        explainer=shap.TreeExplainer(self.model) if self.classifier_type in ['random_forest','gradient_boosting','xgboost'] else shap.LinearExplainer(self.model,X)
-        shap_values = explainer.shap_values(X)
+        X_scaled = self.scaler.transform(X)
+        if self.classifier_type in ['random_forest', 'gradient_boosting', 'xgboost']:
+           explainer = shap.TreeExplainer(self.model)
+           shap_values = explainer.shap_values(X_scaled)
+        else:
+           explainer = shap.LinearExplainer(self.model, X_scaled)
+           shap_values = explainer.shap_values(X_scaled)
 
         # For binary classification
         if isinstance(shap_values, list):
