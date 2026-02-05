@@ -117,6 +117,9 @@ class ChurnPredictor:
         if not self.is_trained:
             logger.error("Model is not yet trained.Call fit() before predict")
             raise ValueError("Model not trained")
+        if X.shape[1]!=self.feature_dim:
+            logger.error(f"Feature dimension mismatch. Expected {self.feature_dim} but got {X.shape[1]}")
+            raise ValueError("Feature dimension mismatch")
         X_scaled=self.scaler.transform(X)
         try:
             predictions=self.model.predict(X_scaled)
@@ -124,4 +127,29 @@ class ChurnPredictor:
         except Exception as e:
             logger.error(f"Error during prediction {e}")
             raise e
+    def predict_proba(self,X:pd.DataFrame)->np.ndarray:
+        if not self.is_trained:
+            logger.error("Model is not yet trained.Call fit() before predict_proba")
+            raise ValueError("Model not Trained")
+        if X.shape[1]!=self.feature_dim:
+            logger.error(f"Feature dimension mismatch. Expected {self.feature_dim} but got {X.shape[1]}")
+            raise ValueError("Feature dimension mismatch")
+        X_scaled=self.scaler.transform(X)
+        try:
+            if not hasattr(self.model,'predict_proba'):
+                if hasattr(self.model,"decision_function"):
+                    decision_scores=self.model.decision_function(X_scaled)
+                    exp_scores=np.exp(decision_scores- np.max(decision_scores,axis=1,keepdims=True))
+                    probas=exp_scores/np.sum(exp_scores,axis=1,keepdims=True)
+                    return probas
+                else:
+                    logger.error("Model does not support probability predictions")
+                    raise ValueError("No probability prediction method")
+            probas=self.model.predict_proba(X_scaled)
+            return probas
+        except Exception as e:
+            logger.error(f"Error during probability prediction: {e}")
+            raise e
+        
+
     
