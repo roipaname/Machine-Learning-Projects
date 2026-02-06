@@ -379,3 +379,30 @@ class ChurnPredictor:
         except Exception as e:
             logger.error(f"Error saving model: {e}")
             raise e
+        
+    @classmethod
+    def load_model(classifier_type:str="random_forest",path:Path=None)->'ChurnPredictor':
+        model_path=path or MODELS_DIR/f"{classifier_type.tolower()}_model.joblib"
+
+        if not model_path.exists():
+            logger.error(f"Model file not found at {model_path}")
+            raise FileNotFoundError(f"No model found at {model_path}")
+        try:
+
+            with open(model_path,'rb') as f:
+                model_data=joblib.load(f)
+            predictor=ChurnPredictor(classifier_type=model_data['classifier_type'])
+            predictor.model=model_data['model_state']
+            predictor.scaler=model_data['scaler']
+            predictor.label_encoder=model_data['label_encoder']
+            predictor.feature_names=model_data['feature_names']
+            predictor.training_samples=model_data['training_samples']
+            predictor.num_classes=model_data['num_classes']
+            predictor.class_names=model_data['class_names']
+            predictor.training_date=datetime.fromisoformat(model_data['training_date'])
+            predictor.is_trained=True
+            logger.success(f"Model loaded from {model_path}")
+            return predictor
+        except Exception as e:
+            logger.error(f"Error loading model: {e}")
+            raise e
