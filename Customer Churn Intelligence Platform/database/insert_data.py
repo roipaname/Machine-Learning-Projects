@@ -21,6 +21,7 @@ def read_and_store_accounts(acc_path:Path):
 
     df=pd.read_csv(acc_path)
     print(df.info())
+    
     logger.info(f"inserting {len(df)} accouns into database")
 
     for idx,row in df.iterrows():

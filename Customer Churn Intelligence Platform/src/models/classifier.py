@@ -5,7 +5,7 @@ from sklearn.preprocessing import StandardScaler,LabelEncoder
 from sklearn.model_selection import GridSearchCV,cross_val_score
 from xgboost import XGBClassifier
 import pandas as pd
-from config.settings import RANDOM_STATE,CV_FOLDS
+from config.settings import RANDOM_STATE,CV_FOLDS,MODELS_DIR,MODEL_VERSION
 from src.features.training_data import build_training_dataset
 import joblib
 import shap
@@ -13,6 +13,7 @@ from loguru import logger
 import numpy as np
 from typing import Dict,Optional,List,Tuple,Any
 from datetime import datetime
+from pathlib import Path
 
 class ChurnPredictor:
     CLASSIFIERS={
@@ -351,3 +352,30 @@ class ChurnPredictor:
         
         logger.success("SHAP analysis complete")
         return shap_values, feature_importance
+
+    def save_model(self,path:Optional[Path]=None):
+        if not self.is_trained:
+            logger.error("Model is not trained.Train Model before saving")
+            raise ValueError("Model not trained")
+        model_path=path or MODELS_DIR/f"{self.classifier_type}_model.joblib"
+        model_path.parent.mkdir(parents=True,exist_ok=True)
+        try:
+            model_data={
+                "version":MODEL_VERSION,
+                "training_date":self.training_date.isoformat(),
+                "classifier_type":self.classifier_type, 
+                "model_state":self.model,
+                "scaler":self.scaler,
+                "label_encoder":self.label_encoder,
+                "feature_names":self.feature_names,
+                "training_samples":self.training_samples,
+                "num_classes":self.num_classes,
+                "class_names":self.class_names
+            }
+
+            with open(model_path,'wb') as f:
+                joblib.dump(model_data,f)
+            logger.success(f"Model saved to {model_path}")
+        except Exception as e:
+            logger.error(f"Error saving model: {e}")
+            raise e
