@@ -404,5 +404,5 @@ class ChurnPredictor:
             logger.success(f"Model loaded from {model_path}")
             return predictor
         except Exception as e:
-            logger.error(f"Error loading model: {e}")
+            logger.error(f"Error loading model:,please check if model exist {e}")
             raise e
