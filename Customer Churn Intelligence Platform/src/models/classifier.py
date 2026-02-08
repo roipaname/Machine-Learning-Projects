@@ -352,6 +352,27 @@ class ChurnPredictor:
         
         logger.success("SHAP analysis complete")
         return shap_values, feature_importance
+    
+    def calculate_feature_importance(self, X, y):
+        """
+        Calculate SHAP values for best model
+        """
+        logger.info("Calculating SHAP values...")
+        
+        explainer = shap.TreeExplainer(self.best_model)
+        shap_values = explainer.shap_values(X)
+        
+        # For binary classification
+        if isinstance(shap_values, list):
+            shap_values = shap_values[1]
+        
+        feature_importance = pd.DataFrame({
+            'feature': self.feature_names,
+            'importance': np.abs(shap_values).mean(axis=0)
+        }).sort_values('importance', ascending=False)
+        
+        logger.success("SHAP analysis complete")
+        return shap_values, feature_importance
 
     def save_model(self,path:Optional[Path]=None):
         if not self.is_trained:

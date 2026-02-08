@@ -24,3 +24,13 @@ def train_model(data_path):
     X_test, y_test = X[val_idx:], y[val_idx:]
     
     logger.info(f"Train: {len(X_train)}, Val: {len(X_val)}, Test: {len(X_test)}")
+    results=predictor.train_models(X_train, y_train, X_val, y_val)
+    shap_values,feature_importance=predictor.calculate_feature_importance(X_val, y_val)
+    print("\nTop 10 Churn Drivers:")
+    print(feature_importance.head(10))
+    print("="*50)
+    print(shap_values[:5])  # Show SHAP values for first 5 samples
+    
+    # Save
+    predictor.save_model()
+    feature_importance.to_csv('models/artifacts/feature_importance.csv', index=False)
