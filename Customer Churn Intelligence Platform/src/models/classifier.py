@@ -379,6 +379,35 @@ class ChurnPredictor:
         except Exception as e:
             logger.error(f"Error saving model: {e}")
             raise e
+    def train_models(self, X_train, y_train, X_val, y_val):
+        for name,config in self.CLASSIFIERS.items():
+            logger.info(f"Training {name}...")
+            results={}
+            try:
+                model=config['class'](**config['params'])
+                model.fit(X_train,y_train)
+                y_pred=model.predict(X_val)
+                y_pred_proba=model.predict_proba(X_val)[:,1] if hasattr(model,'predict_proba') else None
+                roc_auc_score=roc_auc_score(y_val,y_pred_proba) if y_pred_proba is not None else None
+                accuracy=accuracy_score(y_val,y_pred)
+                logger.info(f"{name} - Accuracy: {accuracy:.4f}, ROC AUC: {roc_auc_score:.4f}" if roc_auc_score is not None else f"{name} - Accuracy: {accuracy:.4f}")
+                results[name]={
+                    'model':model,
+                    'accuracy':accuracy,
+                    'roc_auc_score':roc_auc_score
+                }
+            except Exception as e:
+                logger.error(f"Error training {name}: {e}")
+                continue
+        best_name=max(results,key=lambda x:results[x]['roc_auc_score'] if results[x]['roc_auc_score'] is not None else results[x]['accuracy'])
+        self.best_model=results[best_name]['model']
+        self.models = {k: v['model'] for k, v in results.items()}
+        
+        logger.success(f"Best model: {best_name} (AUC: {results[best_name]['roc_auc_score']:.4f})")
+        
+        return results
+    
+
         
     @classmethod
     def load_model(classifier_type:str="random_forest",path:Path=None)->'ChurnPredictor':
