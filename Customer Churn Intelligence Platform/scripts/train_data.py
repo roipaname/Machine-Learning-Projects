@@ -34,3 +34,7 @@ def train_model(data_path):
     # Save
     predictor.save_model()
     feature_importance.to_csv('models/artifacts/feature_importance.csv', index=False)
+
+
+if __name__=="__main__":
+    train_model()
