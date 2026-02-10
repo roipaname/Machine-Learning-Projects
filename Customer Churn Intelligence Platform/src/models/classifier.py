@@ -3,7 +3,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report,confusion_matrix,roc_auc_score,precision_recall_curve,accuracy_score
 from sklearn.preprocessing import StandardScaler,LabelEncoder
 from sklearn.model_selection import GridSearchCV,cross_val_score
-from xgboost import XGBClassifier
+#from xgboost import XGBClassifier
 import pandas as pd
 from config.settings import RANDOM_STATE,CV_FOLDS,MODELS_DIR,MODEL_VERSION
 from src.features.training_data import build_training_dataset
@@ -53,21 +53,7 @@ class ChurnPredictor:
                 'learning_rate': [0.01, 0.1, 0.2]
             }
         },
-        'xgboost':{
-            'class':XGBClassifier,
-            'params':{
-                'n_estimators':100,
-                'learning_rate':0.1,
-                'max_depth':30,
-                'random_state':RANDOM_STATE,
-                'use_label_encoder':False,
-                'eval_metric':'logloss'
-            },
-            'grid_params': {
-                'n_estimators': [50, 100, 200],
-                'learning_rate': [0.01, 0.1, 0.2]
-            }
-        }
+        
     }
 
     def __init__(self,classifier_name:str='random_forest',custom_params:Optional[Dict]=None):
