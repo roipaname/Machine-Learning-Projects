@@ -1,444 +1,472 @@
-from sklearn.ensemble import RandomForestClassifier,GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report,confusion_matrix,roc_auc_score,precision_recall_curve,accuracy_score
-from sklearn.preprocessing import StandardScaler,LabelEncoder
-from sklearn.model_selection import GridSearchCV,cross_val_score
-#from xgboost import XGBClassifier
+from sklearn.metrics import (
+    classification_report, confusion_matrix, roc_auc_score, 
+    precision_recall_curve, accuracy_score
+)
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.model_selection import GridSearchCV, cross_val_score
 import pandas as pd
-from config.settings import RANDOM_STATE,CV_FOLDS,MODELS_DIR,MODEL_VERSION
-from src.features.training_data import build_training_dataset
+import numpy as np
 import joblib
 import shap
 from loguru import logger
-import numpy as np
-from typing import Dict,Optional,List,Tuple,Any
+from typing import Dict, Optional, List, Tuple, Any
 from datetime import datetime
 from pathlib import Path
+from config.settings import RANDOM_STATE, CV_FOLDS, MODELS_DIR, MODEL_VERSION
 
 class ChurnPredictor:
-    CLASSIFIERS={
-        'random_forest':{
-            'class':RandomForestClassifier,
-            'params':{
-                'n_estimators':100,
-                'max_depth':40,
-                'random_state':RANDOM_STATE
+    CLASSIFIERS = {
+        'random_forest': {
+            'class': RandomForestClassifier,
+            'params': {
+                'n_estimators': 100,
+                'max_depth': 40,
+                'class_weight': 'balanced',  # Handle class imbalance
+                'random_state': RANDOM_STATE
             },
             'grid_params': {
                 'n_estimators': [50, 100, 200],
                 'max_depth': [30, 50, None]
             }
         },
-        'logistic_regression':{
-            'class':LogisticRegression,
-            'params':{
-                'solver':'liblinear',
-                'random_state':RANDOM_STATE
+        'logistic_regression': {
+            'class': LogisticRegression,
+            'params': {
+                'solver': 'liblinear',
+                'class_weight': 'balanced',  # Handle class imbalance
+                'random_state': RANDOM_STATE,
+                'max_iter': 1000
             },
             'grid_params': {
                 'C': [0.01, 0.1, 1, 10],
                 'penalty': ['l1', 'l2']
             }
         },
-        'gradient_boosting':{
-            'class':GradientBoostingClassifier,
-            'params':{
-                'n_estimators':100,
-                'learning_rate':0.1,
-                'max_depth':30,
-                'random_state':RANDOM_STATE
+        'gradient_boosting': {
+            'class': GradientBoostingClassifier,
+            'params': {
+                'n_estimators': 100,
+                'learning_rate': 0.1,
+                'max_depth': 5,
+                'random_state': RANDOM_STATE
             },
             'grid_params': {
                 'n_estimators': [50, 100, 200],
                 'learning_rate': [0.01, 0.1, 0.2]
             }
-        },
-        
+        }
     }
 
-    def __init__(self,classifier_name:str='random_forest',custom_params:Optional[Dict]=None):
+    def __init__(self, classifier_name: str = 'random_forest', custom_params: Optional[Dict] = None):
         if classifier_name not in self.CLASSIFIERS:
-            logger.error(f"Classifier {classifier_name} not recognized. Availble:{list(self.CLASSIFIERS.keys())}")
-            raise ValueError("Invalid classifier name")
-        self.config=self.CLASSIFIERS[classifier_name]
-        self.params=self.config['params']
+            raise ValueError(f"Invalid classifier. Choose from: {list(self.CLASSIFIERS.keys())}")
+        
+        self.classifier_type = classifier_name
+        self.config = self.CLASSIFIERS[classifier_name]
+        
+        # Merge params
+        self.params = self.config['params'].copy()
         if custom_params:
             self.params.update(custom_params)
-        self.model=self.config['class'](**self.params)
-        self.classifier_type=classifier_name
-        self.is_trained=False
-        self.scaler=StandardScaler()
-        self.label_encoder=LabelEncoder()
-        self.training_date=None
-        self.training_date=None
-        self.training_samples=0
-        self.num_classes=0
-        self.class_names=[]
-        self.feature_dim=0
-        self.label_encoders = {}
-
+        
+        # Initialize model
+        self.model = self.config['class'](**self.params)
+        
+        # Preprocessing
+        self.scaler = StandardScaler()
+        self.label_encoders = {}  # For categorical features only
+        self.feature_names = []
+        
+        # Training metadata
+        self.is_trained = False
+        self.training_date = None
+        self.training_samples = 0
+        self.feature_dim = 0
+        
         logger.success(f"Initialized {classifier_name} classifier")
-    def prepare_data(self, df: pd.DataFrame):
+
+    def prepare_data(self, df: pd.DataFrame, fit_encoders: bool = None) -> Tuple[pd.DataFrame, pd.Series]:
         """
-        Prepare features for ML training
+        Prepare features from raw DataFrame.
+        
+        Args:
+            df: Raw DataFrame with customer data
+            fit_encoders: 
+                - True: Always fit new encoders (training mode)
+                - False: Always use existing encoders (inference mode, will error if none exist)
+                - None (default): Auto-detect - fit if no encoders exist, use existing otherwise
+        
+        Returns:
+            X_scaled: Scaled feature matrix (DataFrame)
+            y: Binary target (0/1) or None if 'churned' not in df
         """
         # Separate features and target
         X = df.drop(['customer_id', 'churned', 'churn_date'], axis=1, errors='ignore')
-        y = df['churned'].astype(int)
+        y = df['churned'].astype(int) if 'churned' in df.columns else None
+        
+        # Store feature names on first call
+        if not self.feature_names:
+            self.feature_names = X.columns.tolist()
+        
+        # Auto-detect mode if not specified
+        if fit_encoders is None:
+            fit_encoders = len(self.label_encoders) == 0
+            logger.info(f"Auto-detect mode: fit_encoders={fit_encoders}")
         
         # Handle categorical features
         categorical_cols = X.select_dtypes(include=['object']).columns
-        for col in categorical_cols:
-            le = LabelEncoder()
-            X[col] = le.fit_transform(X[col].astype(str))
-            self.label_encoders[col] = le
+        
+        if fit_encoders:
+            # TRAINING MODE: Fit new encoders
+            logger.info("Fitting new encoders and scaler...")
+            for col in categorical_cols:
+                le = LabelEncoder()
+                X[col] = le.fit_transform(X[col].astype(str))
+                self.label_encoders[col] = le
+                logger.debug(f"  Encoded '{col}': {list(le.classes_)}")
+        else:
+            # INFERENCE MODE: Use existing encoders
+            logger.info("Using existing encoders and scaler...")
+            for col in categorical_cols:
+                if col not in self.label_encoders:
+                    raise ValueError(
+                        f"No encoder found for column '{col}'. "
+                        f"Available encoders: {list(self.label_encoders.keys())}. "
+                        f"Set fit_encoders=True to create new encoders."
+                    )
+                
+                # Handle unseen categories gracefully
+                known_classes = set(self.label_encoders[col].classes_)
+                unknown_mask = ~X[col].astype(str).isin(known_classes)
+                
+                if unknown_mask.any():
+                    unknown_values = X.loc[unknown_mask, col].unique()
+                    logger.warning(
+                        f"Column '{col}' has {unknown_mask.sum()} unseen values: {unknown_values[:5]}. "
+                        f"Mapping to 'UNKNOWN'."
+                    )
+                    
+                    # Replace unseen with UNKNOWN
+                    X.loc[unknown_mask, col] = 'UNKNOWN'
+                    
+                    # Add UNKNOWN to encoder classes if not present
+                    if 'UNKNOWN' not in self.label_encoders[col].classes_:
+                        self.label_encoders[col].classes_ = np.append(
+                            self.label_encoders[col].classes_, 'UNKNOWN'
+                        )
+                
+                # Transform using saved encoder
+                X[col] = self.label_encoders[col].transform(X[col].astype(str))
         
         # Handle missing values
         X = X.fillna(X.median())
         
-        # Store feature names
-        self.feature_names = X.columns.tolist()
-        
         # Scale features
-        X_scaled = self.scaler.fit_transform(X)
+        if fit_encoders:
+            # TRAINING MODE: Fit scaler
+            X_scaled = self.scaler.fit_transform(X)
+            self.feature_dim = X.shape[1]
+            logger.info(f"Fitted scaler on {self.feature_dim} features")
+        else:
+            # INFERENCE MODE: Use existing scaler
+            if self.feature_dim == 0:
+                raise ValueError(
+                    "Scaler not fitted. Set fit_encoders=True or train the model first."
+                )
+            X_scaled = self.scaler.transform(X)
+            logger.debug(f"Transformed using existing scaler")
+        
         X_scaled = pd.DataFrame(X_scaled, columns=self.feature_names)
         
+        logger.success(
+            f"Data prepared: {len(X_scaled)} samples, {self.feature_dim} features "
+            f"(mode: {'TRAINING' if fit_encoders else 'INFERENCE'})"
+        )
         return X_scaled, y
-    
-    def fit(self,X:pd.DataFrame,y:pd.Series,validate:bool=False):
-        if X.shape[0]!=len(y):
-            raise ValueError("X and y must have same number of samples")
 
-        X_Scaled=self.scaler.fit_transform(X)
-        y_encoded=self.label_encoder.fit_transform(y)
-        if validate:
-            cv_scores=self._cross_validate(X_Scaled,y_encoded)
-            logger.info(f"Cross-validation scores: {cv_scores}")
-
-        try:
-            self.model.fit(X_Scaled,y_encoded)
-            self.is_trained=True
-            self.training_samples=len(X)
-            self.num_classes=len(np.unique(y_encoded))
-            self.class_names=self.label_encoder.classes_.tolist()
-            self.feature_dim=X.shape[1]
-            self.training_date=datetime.utcnow()
-            logger.info(f"  - Features: {self.feature_dim}")
-            logger.info(f"  - Classes: {self.num_classes}")
-            logger.info(f"  - Class distribution: {np.bincount(y_encoded)}")
-            logger.success(f"Model trained on {self.training_samples} samples with {self.feature_dim} features")
-        except Exception as e:
-            logger.error(f"Error during model training: {e}")
-            raise e
+    def fit(self, X: pd.DataFrame, y: pd.Series, validate: bool = False):
+        """
+        Train the model.
         
-    def predict(self,X:pd.DataFrame)->np.ndarray:
-        if not self.is_trained:
-            logger.error("Model is not yet trained.Call fit() before predict")
-            raise ValueError("Model not trained")
-        if X.shape[1]!=self.feature_dim:
-            logger.error(f"Feature dimension mismatch. Expected {self.feature_dim} but got {X.shape[1]}")
-            raise ValueError("Feature dimension mismatch")
-        X_scaled=self.scaler.transform(X)
+        Args:
+            X: Scaled feature matrix (from prepare_data)
+            y: Binary target (0/1)
+            validate: Whether to run cross-validation
+        """
+        if X.shape[0] != len(y):
+            raise ValueError("X and y must have same number of samples")
+        
+        if X.shape[1] != self.feature_dim:
+            raise ValueError(f"Expected {self.feature_dim} features, got {X.shape[1]}")
+        
+        # Cross-validation before training
+        if validate:
+            cv_scores = self._cross_validate(X.values, y.values)
+            logger.info(f"Cross-validation: {cv_scores['mean_cv_score']:.4f} ± {cv_scores['std_cv_score']:.4f}")
+        
+        # Train model
         try:
-            predictions=self.model.predict(X_scaled)
-            return self.label_encoder.inverse_transform(predictions)
+            self.model.fit(X, y)  # y is already 0/1, no encoding needed
+            
+            # Update metadata
+            self.is_trained = True
+            self.training_samples = len(X)
+            self.training_date = datetime.utcnow()
+            
+            logger.info(f"Training complete:")
+            logger.info(f"  - Samples: {self.training_samples}")
+            logger.info(f"  - Features: {self.feature_dim}")
+            logger.info(f"  - Class distribution: {np.bincount(y)}")
+            logger.success("Model trained successfully")
+            
         except Exception as e:
-            logger.error(f"Error during prediction {e}")
-            raise e
-    def predict_proba(self,X:pd.DataFrame)->np.ndarray:
+            logger.error(f"Training failed: {e}")
+            raise
+
+    def predict(self, X: pd.DataFrame) -> np.ndarray:
+        """Predict class labels (0/1)"""
         if not self.is_trained:
-            logger.error("Model is not yet trained.Call fit() before predict_proba")
-            raise ValueError("Model not Trained")
-        if X.shape[1]!=self.feature_dim:
-            logger.error(f"Feature dimension mismatch. Expected {self.feature_dim} but got {X.shape[1]}")
-            raise ValueError("Feature dimension mismatch")
-        X_scaled=self.scaler.transform(X)
+            raise ValueError("Model not trained. Call fit() first.")
+        
+        if X.shape[1] != self.feature_dim:
+            raise ValueError(f"Expected {self.feature_dim} features, got {X.shape[1]}")
+        
         try:
-            if not hasattr(self.model,'predict_proba'):
-                if hasattr(self.model,"decision_function"):
-                    decision_scores=self.model.decision_function(X_scaled)
-                    exp_scores=np.exp(decision_scores- np.max(decision_scores,axis=1,keepdims=True))
-                    probas=exp_scores/np.sum(exp_scores,axis=1,keepdims=True)
-                    return probas
-                else:
-                    logger.error("Model does not support probability predictions")
-                    raise ValueError("No probability prediction method")
-            probas=self.model.predict_proba(X_scaled)
+            predictions = self.model.predict(X)
+            return predictions  # Returns 0/1 directly
+        except Exception as e:
+            logger.error(f"Prediction failed: {e}")
+            raise
+
+    def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
+        """Predict class probabilities"""
+        if not self.is_trained:
+            raise ValueError("Model not trained. Call fit() first.")
+        
+        if X.shape[1] != self.feature_dim:
+            raise ValueError(f"Expected {self.feature_dim} features, got {X.shape[1]}")
+        
+        try:
+            if hasattr(self.model, 'predict_proba'):
+                probas = self.model.predict_proba(X)
+            elif hasattr(self.model, 'decision_function'):
+                # Convert decision scores to probabilities
+                decision_scores = self.model.decision_function(X)
+                probas = 1 / (1 + np.exp(-decision_scores))  # Sigmoid
+                probas = np.vstack([1 - probas, probas]).T
+            else:
+                raise ValueError("Model doesn't support probability predictions")
+            
             return probas
         except Exception as e:
-            logger.error(f"Error during probability prediction: {e}")
-            raise e
-    def predict_with_confidence(self,X:pd.DataFrame,threshold:float=0.5)->List[Tuple[str,float]]:
+            logger.error(f"Probability prediction failed: {e}")
+            raise
+
+
+    def predict_new_data(self, df: pd.DataFrame) -> np.ndarray:
         """
-        Predict with confidence scores.
+        Convenience method: Prepare and predict on new data in one call.
+        Uses existing encoders/scaler (inference mode).
         
         Args:
-            X: FDataFrame (n_samples, n_features)
-            threshold: Minimum confidence for prediction (else return 'uncertain')
+            df: Raw DataFrame with same structure as training data
             
         Returns:
-            List of (predicted_label, confidence) tuples
+            predictions: Binary predictions (0/1)
         """
-        probas=self.predict_proba(X)
-        max_probas=probas.max(axis=1)
-        predictions=self.predict(X)
-        results=[]
-
-        for conf,label in zip(max_probas,predictions):
-            if conf>=threshold:
-                results.append((label,conf))
-            else:
-                results.append(('uncertain',conf))
-        return results
-    
-    def evaluate(self,X:pd.DataFrame,y:pd.Series)->Dict:
         if not self.is_trained:
-            logger.error("Model is not yet trained.Call fit() before evaluate")
-            raise ValueError("Model not trained")
-        y_pred=self.predict(X)
-        y_proba=self.predict_proba(X)[:,1] if self.num_classes==2 else None
-        report=classification_report(y,y_pred,output_dict=True)
-        conf_matrix=confusion_matrix(y,y_pred).tolist()
-        auc_score=roc_auc_score(y,self.predict_proba(X)[:,1]) if self.num_classes==2 else None
-        precision,recall,_=precision_recall_curve(y,y_proba) if self.num_classes==2 else (None,None,None)
-        accuracy_scores=accuracy_score(y,y_pred)
-
-        evaluation_results={
-            'classification_report':report,
-            'confusion_matrix':conf_matrix,
-            'roc_auc_score':auc_score,
-            'precision_recall_curve':{
-                'precision':precision.tolist() if precision is not None else None,
-                'recall':recall.tolist() if recall is not None else None
-            },
-            'accuracy_score':accuracy_scores
-        }
-        logger.success(
-            f"Evaluation complete - Accuracy: {accuracy_scores:.4f}"
-        )
+            raise ValueError("Model not trained. Call fit() or load_model() first.")
         
-        return evaluation_results
-    def _cross_validate(self,X:np.ndarray,y:np.ndarray,cv:int=CV_FOLDS)-> Dict[str, float]:
+        X, _ = self.prepare_data(df, fit_encoders=False)
+        return self.predict(X)
+    
+    def predict_proba_new_data(self, df: pd.DataFrame) -> np.ndarray:
         """
-        Perform cross-validation.
+        Convenience method: Prepare and predict probabilities on new data.
+        Uses existing encoders/scaler (inference mode).
         
         Args:
-            X: Feature matrix
-            y: Encoded labels
+            df: Raw DataFrame with same structure as training data
             
         Returns:
-            Dictionary with mean and std of CV scores
+            probabilities: Class probabilities shape (n_samples, 2)
         """
+        if not self.is_trained:
+            raise ValueError("Model not trained. Call fit() or load_model() first.")
+        
+        X, _ = self.prepare_data(df, fit_encoders=False)
+        return self.predict_proba(X)
+
+    def evaluate(self, X: pd.DataFrame, y: pd.Series) -> Dict:
+        """Evaluate model performance"""
+        if not self.is_trained:
+            raise ValueError("Model not trained")
+        
+        y_pred = self.predict(X)
+        y_proba = self.predict_proba(X)[:, 1]
+        
+        # Calculate metrics
+        report = classification_report(y, y_pred, output_dict=True)
+        conf_matrix = confusion_matrix(y, y_pred).tolist()
+        auc = roc_auc_score(y, y_proba)
+        acc = accuracy_score(y, y_pred)
+        
+        precision, recall, _ = precision_recall_curve(y, y_proba)
+        
+        results = {
+            'accuracy': acc,
+            'roc_auc': auc,
+            'classification_report': report,
+            'confusion_matrix': conf_matrix,
+            'precision_recall_curve': {
+                'precision': precision.tolist(),
+                'recall': recall.tolist()
+            }
+        }
+        
+        logger.success(f"Evaluation: Accuracy={acc:.4f}, AUC={auc:.4f}")
+        return results
+
+    def _cross_validate(self, X: np.ndarray, y: np.ndarray, cv: int = CV_FOLDS) -> Dict:
+        """Perform cross-validation"""
         try:
-            cv_score=cross_val_score(self.model,X,y,cv=cv,scoring='accuracy')
-            return{
-                'mean_cv_score':cv_score.mean(),
-                'std_cv_score':cv_score.std(),
-                'scores': cv_score.tolist()   
+            scores = cross_val_score(self.model, X, y, cv=cv, scoring='roc_auc')
+            return {
+                'mean_cv_score': scores.mean(),
+                'std_cv_score': scores.std(),
+                'scores': scores.tolist()
             }
         except Exception as e:
-            logger.error(f"Error during cross-validation: {e}")
-            raise e
-        
+            logger.error(f"Cross-validation failed: {e}")
+            raise
 
-    def hyperparameter_tuning(self,X:pd.DataFrame,y:pd.Series,cv:int=CV_FOLDS)->Dict[str,Any]:
-        """
-        Perform grid search for hyperparameter tuning.
-        
-        Args:
-            X: Feature matrix
-            y: Target labels
-            cv: Number of cross-validation folds
-            
-        Returns:
-            Dictionary with best parameters and scores
-        """
+    def hyperparameter_tuning(self, X: pd.DataFrame, y: pd.Series, cv: int = CV_FOLDS) -> Dict:
+        """Hyperparameter tuning with GridSearchCV"""
         logger.info(f"Starting hyperparameter tuning for {self.classifier_type}...")
-        y_encoded=self.label_encoder.fit_transform(y)
-        X_scaled=self.scaler.fit_transform(X)
-        grid_params=self.config.get('grid_params',{})
+        
+        grid_params = self.config.get('grid_params', {})
         if not grid_params:
-            logger.warning("No grid parameters defined for this classifier. Skipping tuning.")
+            logger.warning("No grid parameters defined. Skipping tuning.")
             return {}
         
         try:
-            grid_search=GridSearchCV(estimator=self.config['class'](**self.params),param_grid=grid_params,cv=cv,scoring='accuracy',verbose=1,n_jobs=-1)
-            grid_search.fit(X_scaled,y_encoded)
-            self.model=grid_search.best_estimator_
-            self.is_trained=True
-            self.training_date=datetime.utcnow()
-            results={
-                'best_params':grid_search.best_params_,
-                'best_score':grid_search.best_score_,
-                'cv_results':grid_search.cv_results_
+            grid_search = GridSearchCV(
+                estimator=self.config['class'](**self.params),
+                param_grid=grid_params,
+                cv=cv,
+                scoring='roc_auc',  # Use AUC for churn
+                verbose=1,
+                n_jobs=-1
+            )
+            
+            grid_search.fit(X, y)
+            
+            # Update model with best estimator
+            self.model = grid_search.best_estimator_
+            self.is_trained = True
+            self.training_date = datetime.utcnow()
+            
+            results = {
+                'best_params': grid_search.best_params_,
+                'best_score': grid_search.best_score_,
+                'cv_results': grid_search.cv_results_
             }
-            logger.success(f"Hyperparameter tuning complete. Best Score: {results['best_score']:.4f}")
+            
+            logger.success(f"Tuning complete. Best AUC: {results['best_score']:.4f}")
+            logger.info(f"Best params: {results['best_params']}")
+            
             return results
         except Exception as e:
-            logger.error(f"Error during hyperparameter tuning: {e}")
-            raise e
-    def get_feature_importance_basic(self, top_n: int = 20) -> Dict[str, List[float]]:
-        """
-        Get feature importance scores (model-specific).
-        
-        Args:
-            top_n: Number of top features per class
-            
-        Returns:
-            Dictionary mapping class names to feature importance scores
-        """
+            logger.error(f"Hyperparameter tuning failed: {e}")
+            raise
+
+    def calculate_shap_importance(self, X: pd.DataFrame) -> Tuple[np.ndarray, pd.DataFrame]:
+        """Calculate SHAP feature importance"""
         if not self.is_trained:
             raise ValueError("Model must be trained first")
         
-        # Only certain models have interpretable coefficients
-        if not hasattr(self.model, 'coef_'):
-            logger.warning(f"{self.classifier_type} does not have interpretable coefficients")
-            return {}
-        
-        coef = self.model.coef_
-        
-        # Get top features per class
-        importance = {}
-        for idx, class_name in enumerate(self.class_names):
-            class_coef = coef[idx] if len(coef.shape) > 1 else coef
-            top_indices = np.argsort(np.abs(class_coef))[-top_n:][::-1]
-            top_values = class_coef[top_indices]  # <-- actual coefficients
-            importance[class_name] = top_values.tolist()  # store as list of floats
-        
-        return importance
-    def get_feature_importance_shap(self,X:pd.DataFrame, top_n: int = 20) -> Dict[str, List[float]]:
-        """
-        Get feature importance scores using SHAP values.
-        
-        Args:
-            X: Feature matrix (unscaled)
-            top_n: Number of top features per class
-            
-        Returns:
-            Dictionary mapping class names to SHAP importance scores
-        """
-        if not  self.is_trained:
-            raise ValueError("Model must be trained first")
-        X_scaled = self.scaler.transform(X)
-        if self.classifier_type in ['random_forest', 'gradient_boosting', 'xgboost']:
-           explainer = shap.TreeExplainer(self.model)
-           shap_values = explainer.shap_values(X_scaled)
-        else:
-           explainer = shap.LinearExplainer(self.model, X_scaled)
-           shap_values = explainer.shap_values(X_scaled)
-
-        # For binary classification
-        if isinstance(shap_values, list):
-            shap_values = shap_values[1]
-        
-        feature_importance = pd.DataFrame({
-            'feature': self.feature_names,
-            'importance': np.abs(shap_values).mean(axis=0)
-        }).sort_values('importance', ascending=False)
-        
-        logger.success("SHAP analysis complete")
-        return shap_values, feature_importance
-    
-    def calculate_feature_importance(self, X, y):
-        """
-        Calculate SHAP values for best model
-        """
         logger.info("Calculating SHAP values...")
         
-        explainer = shap.TreeExplainer(self.best_model)
-        shap_values = explainer.shap_values(X)
-        
-        # For binary classification
-        if isinstance(shap_values, list):
-            shap_values = shap_values[1]
-        
-        feature_importance = pd.DataFrame({
-            'feature': self.feature_names,
-            'importance': np.abs(shap_values).mean(axis=0)
-        }).sort_values('importance', ascending=False)
-        
-        logger.success("SHAP analysis complete")
-        return shap_values, feature_importance
-
-    def save_model(self,path:Optional[Path]=None):
-        if not self.is_trained:
-            logger.error("Model is not trained.Train Model before saving")
-            raise ValueError("Model not trained")
-        model_path=path or MODELS_DIR/f"{self.classifier_type}_model.joblib"
-        model_path.parent.mkdir(parents=True,exist_ok=True)
         try:
-            model_data={
-                "version":MODEL_VERSION,
-                "training_date":self.training_date.isoformat(),
-                "classifier_type":self.classifier_type, 
-                "model_state":self.model,
-                "scaler":self.scaler,
-                "label_encoder":self.label_encoder,
-                "feature_names":self.feature_names,
-                "training_samples":self.training_samples,
-                "num_classes":self.num_classes,
-                "class_names":self.class_names
-            }
-
-            with open(model_path,'wb') as f:
-                joblib.dump(model_data,f)
-            logger.success(f"Model saved to {model_path}")
+            # Choose appropriate explainer
+            if self.classifier_type in ['random_forest', 'gradient_boosting']:
+                explainer = shap.TreeExplainer(self.model)
+            else:
+                explainer = shap.LinearExplainer(self.model, X)
+            
+            shap_values = explainer.shap_values(X)
+            
+            # For binary classification, take positive class
+            if isinstance(shap_values, list):
+                shap_values = shap_values[1]
+            
+            # Calculate importance
+            feature_importance = pd.DataFrame({
+                'feature': self.feature_names,
+                'importance': np.abs(shap_values).mean(axis=0)
+            }).sort_values('importance', ascending=False)
+            
+            logger.success("SHAP analysis complete")
+            return shap_values, feature_importance
+            
         except Exception as e:
-            logger.error(f"Error saving model: {e}")
-            raise e
-    def train_models(self, X_train, y_train, X_val, y_val):
-        for name,config in self.CLASSIFIERS.items():
-            logger.info(f"Training {name}...")
-            results={}
-            try:
-                model=config['class'](**config['params'])
-                model.fit(X_train,y_train)
-                y_pred=model.predict(X_val)
-                y_pred_proba=model.predict_proba(X_val)[:,1] if hasattr(model,'predict_proba') else None
-                roc_auc_score=roc_auc_score(y_val,y_pred_proba) if y_pred_proba is not None else None
-                accuracy=accuracy_score(y_val,y_pred)
-                logger.info(f"{name} - Accuracy: {accuracy:.4f}, ROC AUC: {roc_auc_score:.4f}" if roc_auc_score is not None else f"{name} - Accuracy: {accuracy:.4f}")
-                results[name]={
-                    'model':model,
-                    'accuracy':accuracy,
-                    'roc_auc_score':roc_auc_score
-                }
-            except Exception as e:
-                logger.error(f"Error training {name}: {e}")
-                continue
-        best_name=max(results,key=lambda x:results[x]['roc_auc_score'] if results[x]['roc_auc_score'] is not None else results[x]['accuracy'])
-        self.best_model=results[best_name]['model']
-        self.models = {k: v['model'] for k, v in results.items()}
-        
-        logger.success(f"Best model: {best_name} (AUC: {results[best_name]['roc_auc_score']:.4f})")
-        
-        return results
-    
+            logger.error(f"SHAP calculation failed: {e}")
+            raise
 
+    def save_model(self, path: Optional[Path] = None):
+        """Save trained model and artifacts"""
+        if not self.is_trained:
+            raise ValueError("Model not trained")
         
-    @classmethod
-    def load_model(classifier_type:str="random_forest",path:Path=None)->'ChurnPredictor':
-        model_path=path or MODELS_DIR/f"{classifier_type.tolower()}_model.joblib"
-
-        if not model_path.exists():
-            logger.error(f"Model file not found at {model_path}")
-            raise FileNotFoundError(f"No model found at {model_path}")
+        model_path = path or MODELS_DIR / f"{self.classifier_type}_model.joblib"
+        model_path.parent.mkdir(parents=True, exist_ok=True)
+        
         try:
+            model_data = {
+                'version': MODEL_VERSION,
+                'classifier_type': self.classifier_type,
+                'training_date': self.training_date.isoformat(),
+                'model': self.model,
+                'scaler': self.scaler,
+                'label_encoders': self.label_encoders,
+                'feature_names': self.feature_names,
+                'training_samples': self.training_samples,
+                'feature_dim': self.feature_dim
+            }
+            
+            joblib.dump(model_data, model_path)
+            logger.success(f"Model saved to {model_path}")
+            
+        except Exception as e:
+            logger.error(f"Save failed: {e}")
+            raise
 
-            with open(model_path,'rb') as f:
-                model_data=joblib.load(f)
-            predictor=ChurnPredictor(classifier_type=model_data['classifier_type'])
-            predictor.model=model_data['model_state']
-            predictor.scaler=model_data['scaler']
-            predictor.label_encoder=model_data['label_encoder']
-            predictor.feature_names=model_data['feature_names']
-            predictor.training_samples=model_data['training_samples']
-            predictor.num_classes=model_data['num_classes']
-            predictor.class_names=model_data['class_names']
-            predictor.training_date=datetime.fromisoformat(model_data['training_date'])
-            predictor.is_trained=True
+    @classmethod
+    def load_model(cls, classifier_type: str = 'random_forest', path: Optional[Path] = None) -> 'ChurnPredictor':
+        """Load saved model"""
+        model_path = path or MODELS_DIR / f"{classifier_type}_model.joblib"
+        
+        if not model_path.exists():
+            raise FileNotFoundError(f"Model not found: {model_path}")
+        
+        try:
+            model_data = joblib.load(model_path)
+            
+            predictor = cls(classifier_type=model_data['classifier_type'])
+            predictor.model = model_data['model']
+            predictor.scaler = model_data['scaler']
+            predictor.label_encoders = model_data['label_encoders']
+            predictor.feature_names = model_data['feature_names']
+            predictor.training_samples = model_data['training_samples']
+            predictor.feature_dim = model_data['feature_dim']
+            predictor.training_date = datetime.fromisoformat(model_data['training_date'])
+            predictor.is_trained = True
+            
             logger.success(f"Model loaded from {model_path}")
             return predictor
+            
         except Exception as e:
-            logger.error(f"Error loading model:,please check if model exist {e}")
-            raise e
+            logger.error(f"Load failed: {e}")
+            raise
