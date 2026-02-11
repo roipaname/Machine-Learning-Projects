@@ -9,12 +9,12 @@ import seaborn as sns
 from loguru import logger
 from pathlib import Path
 from typing import Optional, Dict
-from src.models.train_churn_model import ChurnPredictor
+from src.models.classifier import ChurnPredictor
 from config.settings import MODELS_DIR
 
 def evaluate_churn_model(
     classifier_type: str = 'random_forest',
-    model_path: Optional[Path] = None,
+    model_path: Optional[Path] = MODELS_DIR / 'random_forest_model.joblib',
     data_path: str = 'data/training_features.parquet',
     save_results: bool = True
 ) -> pd.DataFrame:
