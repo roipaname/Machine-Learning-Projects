@@ -645,7 +645,7 @@ class ChurnPredictor:
         try:
             model_data = joblib.load(model_path)
             
-            predictor = cls(classifier_type=model_data['classifier_type'])
+            predictor = cls(classifier_name=model_data['classifier_type'])
             predictor.model = model_data['model']
             predictor.scaler = model_data['scaler']
             predictor.label_encoders = model_data['label_encoders']
