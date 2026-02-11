@@ -6,10 +6,10 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.model_selection import GridSearchCV, cross_val_score
+from sklearn.inspection import permutation_importance
 import pandas as pd
 import numpy as np
 import joblib
-import shap
 from loguru import logger
 from typing import Dict, Optional, List, Tuple, Any
 from datetime import datetime
@@ -382,38 +382,110 @@ class ChurnPredictor:
             logger.error(f"Hyperparameter tuning failed: {e}")
             raise
 
-    def calculate_shap_importance(self, X: pd.DataFrame) -> Tuple[np.ndarray, pd.DataFrame]:
-        """Calculate SHAP feature importance"""
+    def calculate_feature_importance(
+        self, 
+        X: pd.DataFrame, 
+        y: Optional[pd.Series] = None,
+        method: str = 'auto'
+    ) -> pd.DataFrame:
+        """
+        Calculate feature importance using multiple methods.
+        
+        Args:
+            X: Feature matrix (scaled)
+            y: Target variable (required for permutation importance)
+            method: 'auto', 'builtin', 'permutation', or 'both'
+                - 'auto': Use built-in for tree models, permutation for linear
+                - 'builtin': Use model's feature_importances_ or coef_
+                - 'permutation': Use permutation importance (requires y)
+                - 'both': Calculate both methods
+        
+        Returns:
+            DataFrame with feature importance scores
+        """
         if not self.is_trained:
             raise ValueError("Model must be trained first")
         
-        logger.info("Calculating SHAP values...")
+        logger.info(f"Calculating feature importance (method={method})...")
         
-        try:
-            # Choose appropriate explainer
+        results = {}
+        
+        # Determine which methods to use
+        if method == 'auto':
             if self.classifier_type in ['random_forest', 'gradient_boosting']:
-                explainer = shap.TreeExplainer(self.model)
+                methods = ['builtin']
             else:
-                explainer = shap.LinearExplainer(self.model, X)
-            
-            shap_values = explainer.shap_values(X)
-            
-            # For binary classification, take positive class
-            if isinstance(shap_values, list):
-                shap_values = shap_values[1]
-            
-            # Calculate importance
-            feature_importance = pd.DataFrame({
-                'feature': self.feature_names,
-                'importance': np.abs(shap_values).mean(axis=0)
-            }).sort_values('importance', ascending=False)
-            
-            logger.success("SHAP analysis complete")
-            return shap_values, feature_importance
-            
-        except Exception as e:
-            logger.error(f"SHAP calculation failed: {e}")
-            raise
+                methods = ['permutation'] if y is not None else ['builtin']
+        elif method == 'both':
+            methods = ['builtin', 'permutation']
+        else:
+            methods = [method]
+        
+        # Built-in importance (feature_importances_ or coefficients)
+        if 'builtin' in methods:
+            try:
+                if hasattr(self.model, 'feature_importances_'):
+                    # Tree-based models
+                    results['builtin_importance'] = self.model.feature_importances_
+                    logger.info("Using tree-based feature_importances_")
+                    
+                elif hasattr(self.model, 'coef_'):
+                    # Linear models
+                    coef = self.model.coef_
+                    if len(coef.shape) > 1:
+                        coef = coef[0]  # Binary classification
+                    results['builtin_importance'] = np.abs(coef)
+                    logger.info("Using linear model coefficients")
+                    
+                else:
+                    logger.warning("Model doesn't have built-in importance scores")
+                    
+            except Exception as e:
+                logger.warning(f"Built-in importance failed: {e}")
+        
+        # Permutation importance
+        if 'permutation' in methods:
+            if y is None:
+                logger.warning("Permutation importance requires y target. Skipping.")
+            else:
+                try:
+                    perm_importance = permutation_importance(
+                        self.model, 
+                        X, 
+                        y, 
+                        n_repeats=10,
+                        random_state=RANDOM_STATE,
+                        n_jobs=-1
+                    )
+                    results['permutation_importance'] = perm_importance.importances_mean
+                    results['permutation_std'] = perm_importance.importances_std
+                    logger.info("Calculated permutation importance")
+                    
+                except Exception as e:
+                    logger.warning(f"Permutation importance failed: {e}")
+        
+        # Create DataFrame
+        importance_df = pd.DataFrame({'feature': self.feature_names})
+        
+        for key, values in results.items():
+            importance_df[key] = values
+        
+        # Add combined score if both methods available
+        if 'builtin_importance' in results and 'permutation_importance' in results:
+            # Normalize both to 0-1 range
+            builtin_norm = results['builtin_importance'] / results['builtin_importance'].sum()
+            perm_norm = results['permutation_importance'] / results['permutation_importance'].sum()
+            importance_df['combined_importance'] = (builtin_norm + perm_norm) / 2
+        
+        # Sort by most relevant column
+        sort_col = 'combined_importance' if 'combined_importance' in importance_df.columns \
+                   else 'builtin_importance' if 'builtin_importance' in importance_df.columns \
+                   else 'permutation_importance'
+        
+        importance_df = importance_df.sort_values(sort_col, ascending=False).reset_index(drop=True)
+        
+        logger.success(f"Feature importance calculated. Top 5: {importance_df['feature'].head().tolist()}")
+        return importance_df
 
     def save_model(self, path: Optional[Path] = None):
         """Save trained model and artifacts"""
