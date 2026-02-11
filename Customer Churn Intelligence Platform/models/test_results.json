@@ -1,0 +1,42 @@
+{
+  "best_model": "random_forest",
+  "test_auc": 1.0,
+  "test_accuracy": 1.0,
+  "confusion_matrix": [
+    [
+      82,
+      0
+    ],
+    [
+      0,
+      968
+    ]
+  ],
+  "classification_report": {
+    "0": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 82.0
+    },
+    "1": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 968.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 1050.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 1050.0
+    }
+  }
+}

@@ -279,3 +279,4 @@ Thumbs.db
 .coverage
 htmlcov/
 *.csv
+*.joblib
