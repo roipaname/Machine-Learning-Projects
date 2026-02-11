@@ -35,7 +35,7 @@ def evaluate_churn_model(
     # === LOAD MODEL ===
     try:
         predictor = ChurnPredictor.load_model(
-            classifier_type=classifier_type,
+            classifier_name=classifier_type,
             path=model_path
         )
         logger.success(f"Loaded model trained on {predictor.training_date}")
