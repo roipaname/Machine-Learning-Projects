@@ -225,6 +225,125 @@ class ChurnPredictor:
             logger.error(f"Training failed: {e}")
             raise
 
+    def train_models(
+        self, 
+        X_train: pd.DataFrame, 
+        y_train: pd.Series, 
+        X_val: pd.DataFrame, 
+        y_val: pd.Series,
+        models_to_train: Optional[List[str]] = None,
+        tune_hyperparameters: bool = False
+    ) -> Dict[str, Dict]:
+        """
+        Train and compare multiple models.
+        
+        Args:
+            X_train: Training features (scaled)
+            y_train: Training labels
+            X_val: Validation features (scaled)
+            y_val: Validation labels
+            models_to_train: List of model names to train. If None, trains all available models.
+            tune_hyperparameters: Whether to perform hyperparameter tuning
+            
+        Returns:
+            Dictionary with results for each model
+        """
+        if models_to_train is None:
+            models_to_train = list(self.CLASSIFIERS.keys())
+        
+        logger.info(f"Training {len(models_to_train)} models: {models_to_train}")
+        logger.info(f"Train size: {len(X_train)}, Val size: {len(X_val)}")
+        
+        results = {}
+        best_model = None
+        best_score = -1
+        
+        for model_name in models_to_train:
+            logger.info(f"\n{'='*60}")
+            logger.info(f"Training {model_name.upper()}")
+            logger.info(f"{'='*60}")
+            
+            try:
+                # Create new predictor for this model
+                predictor = ChurnPredictor(classifier_name=model_name)
+                
+                # Use the same preprocessing artifacts (scaler, encoders, feature_names)
+                predictor.scaler = self.scaler
+                predictor.label_encoders = self.label_encoders
+                predictor.feature_names = self.feature_names
+                predictor.feature_dim = self.feature_dim
+                
+                # Train with or without hyperparameter tuning
+                if tune_hyperparameters:
+                    logger.info("Performing hyperparameter tuning...")
+                    tuning_results = predictor.hyperparameter_tuning(X_train, y_train)
+                    results[model_name] = {
+                        'tuning': tuning_results,
+                        'best_params': tuning_results.get('best_params', {})
+                    }
+                else:
+                    # Standard training with cross-validation
+                    predictor.fit(X_train, y_train, validate=True)
+                    results[model_name] = {}
+                
+                # Evaluate on validation set
+                logger.info("Evaluating on validation set...")
+                val_metrics = predictor.evaluate(X_val, y_val)
+                results[model_name]['validation_metrics'] = val_metrics
+                
+                # Calculate feature importance
+                logger.info("Calculating feature importance...")
+                importance_df = predictor.calculate_feature_importance(X_val, y_val, method='auto')
+                results[model_name]['feature_importance'] = importance_df
+                
+                # Track best model by AUC
+                val_auc = val_metrics['roc_auc']
+                if val_auc > best_score:
+                    best_score = val_auc
+                    best_model = model_name
+                    # Update self to be the best model
+                    self.model = predictor.model
+                    self.classifier_type = model_name
+                    self.is_trained = True
+                    self.training_samples = predictor.training_samples
+                    self.training_date = predictor.training_date
+                
+                # Log summary
+                logger.success(f"{model_name} - Val AUC: {val_auc:.4f}, Accuracy: {val_metrics['accuracy']:.4f}")
+                
+            except Exception as e:
+                logger.error(f"Failed to train {model_name}: {e}")
+                results[model_name] = {'error': str(e)}
+        
+        # Summary
+        logger.info(f"\n{'='*60}")
+        logger.info("TRAINING SUMMARY")
+        logger.info(f"{'='*60}")
+        
+        comparison_df = pd.DataFrame([
+            {
+                'model': name,
+                'val_auc': res.get('validation_metrics', {}).get('roc_auc', 0),
+                'val_accuracy': res.get('validation_metrics', {}).get('accuracy', 0),
+                'val_f1': res.get('validation_metrics', {}).get('classification_report', {})
+                    .get('1', {}).get('f1-score', 0)
+            }
+            for name, res in results.items()
+            if 'validation_metrics' in res
+        ]).sort_values('val_auc', ascending=False)
+        
+        logger.info("\nModel Comparison:")
+        logger.info(f"\n{comparison_df.to_string(index=False)}")
+        logger.success(f"\nBest model: {best_model} (AUC: {best_score:.4f})")
+        
+        results['summary'] = {
+            'best_model': best_model,
+            'best_score': best_score,
+            'comparison': comparison_df.to_dict('records')
+        }
+        
+        return results
+
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         """Predict class labels (0/1)"""
         if not self.is_trained:
