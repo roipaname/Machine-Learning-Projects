@@ -1,0 +1,15 @@
+{
+  "model": "random_forest",
+  "test_samples": 1050,
+  "churned_samples": 968,
+  "auc_roc": 1.0,
+  "accuracy": 1.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "specificity": 1.0,
+  "total_revenue_at_risk": 875310.1199999999,
+  "captured_revenue": 875310.1199999999,
+  "revenue_recall": 1.0,
+  "false_positive_cost": 0.0,
+  "net_business_value": 545967.9968914285
+}
