@@ -10,11 +10,11 @@ from loguru import logger
 from pathlib import Path
 from typing import Optional, Dict
 from src.models.classifier import ChurnPredictor
-from config.settings import DATA_PROCESSED_DIR,MODEL_DIR
+from config.settings import DATA_PROCESSED_DIR,MODELS_DIR
 
 def evaluate_churn_model(
     classifier_type: str = 'random_forest',
-    model_path: Optional[Path] = MODEL_DIR / 'random_forest_model.joblib',
+    model_path: Optional[Path] = MODELS_DIR / 'random_forest_model.joblib',
     data_path: str = str(DATA_PROCESSED_DIR / 'training_features.parquet'),
     save_results: bool = True
 ) -> pd.DataFrame:
