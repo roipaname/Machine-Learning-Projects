@@ -78,4 +78,8 @@ class CustomerContextBuilder:
 
         logger.success(f"Context built for customer {customer_id} with churn probability {churn_proba:.4f} and risk tier {risk_tier}")
         return context
-        
+if __name__ == "__main__":
+    builder = CustomerContextBuilder()
+    # Replace with actual customer_id
+    context = builder.build_context("your-customer-uuid")
+    print(context)
