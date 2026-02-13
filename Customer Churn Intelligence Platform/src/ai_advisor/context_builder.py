@@ -27,7 +27,7 @@ class CustomerContextBuilder:
         
         #Get Churn prediction
         X=pd.DataFrame([features]).drop(columns=COLUMNS_TO_EXCLUDE,errors='ignore')
-        X_scaled, _ = self.model.prepare_data(df, fit_encoders=False)
+        X_scaled, _ = self.model.prepare_data(X, fit_encoders=False)
         churn_proba=self.model.predict_proba(X_scaled)[0,1]
 
         #Determine Risk Tier:

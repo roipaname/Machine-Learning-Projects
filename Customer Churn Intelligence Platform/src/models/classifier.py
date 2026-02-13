@@ -363,18 +363,26 @@ class ChurnPredictor:
         """Predict class probabilities"""
         if not self.is_trained:
             raise ValueError("Model not trained. Call fit() first.")
+
+        X_array = X.values if isinstance(X, pd.DataFrame) else X
         
-        if X.shape[1] != self.feature_dim:
+        if X_array.shape[1] != self.feature_dim:
             raise ValueError(f"Expected {self.feature_dim} features, got {X.shape[1]}")
         
         try:
             if hasattr(self.model, 'predict_proba'):
-                probas = self.model.predict_proba(X)
+                probas = self.model.predict_proba(X_array)
             elif hasattr(self.model, 'decision_function'):
                 # Convert decision scores to probabilities
-                decision_scores = self.model.decision_function(X)
-                probas = 1 / (1 + np.exp(-decision_scores))  # Sigmoid
-                probas = np.vstack([1 - probas, probas]).T
+                decision_scores = self.model.decision_function(X_array)
+                if decision_scores.ndim == 1:
+                    # Binary classification
+                    prob_class1 = 1 / (1 + np.exp(-decision_scores))
+                    probas = np.vstack([1 - prob_class1, prob_class1]).T
+                else:
+                    probas = np.exp(decision_scores) / np.sum(np.exp(decision_scores), axis=1, keepdims=True)
+
+
             else:
                 raise ValueError("Model doesn't support probability predictions")
             
