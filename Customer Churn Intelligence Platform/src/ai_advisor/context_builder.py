@@ -7,13 +7,13 @@ from loguru import logger
 from config.settings import MODELS_DIR,COLUMNS_TO_EXCLUDE
 from src.models.classifier import ChurnPredictor
 class CustomerContextBuilder:
-    def __init__(self, model_type:str="ranndom_forest"):
+    def __init__(self, model_type:str="random_forest"):
         self.model_type=model_type
         self.model_path=MODELS_DIR / f"{model_type}_model.joblib"
         if not self.model_path.exists():
             logger.warning(f"Model file {self.model_path} not found. Context builder will not be able to generate predictions.")
             raise FileNotFoundError(f"Model file {self.model_path} not found.")
-        self.model=ChurnPredictor.load_model(self.model_path)
+        self.model=ChurnPredictor.load_model(path=self.model_path)
         self.feature_importance=pd.read_csv(MODELS_DIR / f"feature_importance.csv")
     def build_context(self,customer_id:str)->Dict:
         """
@@ -27,7 +27,7 @@ class CustomerContextBuilder:
         
         #Get Churn prediction
         X=pd.DataFrame([features]).drop(columns=COLUMNS_TO_EXCLUDE,errors='ignore')
-        X_scaled=self.model.scaler.transform(X)
+        X_scaled, _ = self.model.prepare_data(df, fit_encoders=False)
         churn_proba=self.model.predict_proba(X_scaled)[0,1]
 
         #Determine Risk Tier:
@@ -81,5 +81,5 @@ class CustomerContextBuilder:
 if __name__ == "__main__":
     builder = CustomerContextBuilder()
     # Replace with actual customer_id
-    context = builder.build_context("your-customer-uuid")
+    context = builder.build_context("cfd8ca00-66ed-4e38-9697-260c89abc087")
     print(context)
