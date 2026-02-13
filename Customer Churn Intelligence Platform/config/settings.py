@@ -38,7 +38,7 @@ for directory in [DATA_DIR, MODELS_DIR, LOGS_DIR,DATA_RAW_DIR,DATA_PROCESSED_DIR
 # DATABASE SET UP
 # ============================================================================
 
-
+COLUMNS_TO_EXCLUDE=['customer_id', 'churned', 'churn_date']
 DB_NAME=os.getenv("DB_CHURN_NAME")
 
 if not DB_NAME:

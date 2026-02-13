@@ -15,4 +15,16 @@ class CustomerContextBuilder:
             raise FileNotFoundError(f"Model file {self.model_path} not found.")
         self.model=ChurnPredictor.load_model(self.model_path)
         self.feature_importance=pd.read_csv(MODELS_DIR / f"feature_importance.csv")
+    def build_context(self,customer_id:str)->Dict:
+        """
+        Build concise customer context for LLM
+        """
+        # Extract features
+        features=extract_customer_features(customer_id)
+        if features is None:
+            logger.warning(f"No features found for customer {customer_id}. Context will be limited.")
+            return {"customer_id":customer_id,"context":"No data available"}
+        
+        #Get Churn prediction
+        X=pd.DataFrame([features])
         
