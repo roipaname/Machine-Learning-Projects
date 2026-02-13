@@ -81,5 +81,5 @@ class CustomerContextBuilder:
 if __name__ == "__main__":
     builder = CustomerContextBuilder()
     # Replace with actual customer_id
-    context = builder.build_context("cfd8ca00-66ed-4e38-9697-260c89abc087")
+    context = builder.build_context("cb6761fd-f237-4a50-84e4-a38285b77648")
     print(context)

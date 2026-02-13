@@ -66,8 +66,8 @@ def extract_customer_features(customer_id: str, as_of_date: datetime = None) -> 
         else:
             features['plan_name'] = None
             features['monthly_fee'] = 0
-            features['days_until_renewal'] = None
-            features['contract_length_days'] = None
+            features['days_until_renewal'] = 0
+            features['contract_length_days'] = 0
 
         # === USAGE FEATURES ===
         # Total usage events in different windows
