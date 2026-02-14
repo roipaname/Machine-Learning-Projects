@@ -23,7 +23,7 @@ class CustomerContextBuilder:
         features=extract_customer_features(customer_id)
         if features is None:
             logger.warning(f"No features found for customer {customer_id}. Context will be limited.")
-            return {"customer_id":customer_id,"context":"No data available"}
+            return {"customer_id":customer_id,"context":"No data available to build context"}
         
         #Get Churn prediction
         X=pd.DataFrame([features]).drop(columns=COLUMNS_TO_EXCLUDE,errors='ignore')
