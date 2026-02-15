@@ -57,3 +57,34 @@ class RAGDocumentStore:
         )
         
         logger.success(f"Added {len(documents)} documents")
+    def retrieve(self,query:str,customer_context: Dict = None,top_k:int=5)->List[Dict]:
+        """
+        Retrieve relevant strategy documents
+        """
+
+        if customer_context:
+            enhanced_query = f"""
+            Customer segment: {customer_context.get('account_info', {}).get('tier')}
+            Risk level: {customer_context.get('risk_tier')}
+            Query: {query}
+            """
+        else:
+            enhanced_query = query
+        query_embedding=self.embedder.encode(enhanced_query).tolist()
+        results=self.collection.query(
+            query_embeddings=[query_embedding],
+            n_results=top_k
+        )
+        retrieved_docs = []
+        for i in range(len(results['ids'][0])):
+            retrieved_docs.append({
+                'id': results['ids'][0][i],
+                'content': results['documents'][0][i],
+                'metadata': results['metadatas'][0][i],
+                'score': results['distances'][0][i] if 'distances' in results else None
+            })
+        
+        logger.info(f"Retrieved {len(retrieved_docs)} documents for query")
+        return retrieved_docs
+
+
