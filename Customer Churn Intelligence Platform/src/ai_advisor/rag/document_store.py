@@ -24,3 +24,36 @@ class RAGDocumentStore:
         except:
             self.collection=self.client.create_collection("retention_strategies")
         logger.success("RAG Document Store initialized")
+    def add_document(self,doc_id:str,content:str,metadata:Dict):
+        """
+        Add business strategy document to knowledge base
+        """
+        embedding=self.embedder.encode(content).tolist()
+
+        self.collection.add(
+            ids=[doc_id],
+            documents=[content],
+            metadatas=[metadata],
+            embeddings=[embedding]
+        )
+        logger.success(f"Document {doc_id} added to RAG Document Store")
+    def add_documents_bulk(self, documents: List[Dict]):
+        """
+        Bulk upload documents
+        Each document: {'id': str, 'content': str, 'metadata': dict}
+        """
+        
+        ids = [doc['id'] for doc in documents]
+        contents = [doc['content'] for doc in documents]
+        metadatas = [doc['metadata'] for doc in documents]
+        
+        embeddings = self.embedder.encode(contents).tolist()
+        
+        self.collection.add(
+            ids=ids,
+            embeddings=embeddings,
+            documents=contents,
+            metadatas=metadatas
+        )
+        
+        logger.success(f"Added {len(documents)} documents")
