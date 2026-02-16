@@ -88,3 +88,57 @@ class RAGDocumentStore:
         return retrieved_docs
 
 
+if __name__ == "__main__":
+    store = RAGDocumentStore()
+    
+    sample_docs = [
+        {
+            'id': 'strategy_001',
+            'content': """
+            Q4 2024 Retention Analysis - Enterprise Tech Segment
+            
+            For enterprise customers (MRR >$5k) showing engagement decline >40%:
+            - Executive Business Review (EBR) within 5 days: 73% save rate
+            - Combine with product training: increases to 81%
+            - Strategic discount (15-20%): 68% save rate standalone
+            - Best approach: EBR + training + conditional discount
+            
+            Average intervention cost: $2,400
+            Average revenue saved: $60,000 annual
+            """,
+            'metadata': {
+                'type': 'analyst_report',
+                'segment': 'Enterprise',
+                'date': '2024-Q4',
+                'success_rate': 0.73
+            }
+        },
+        {
+            'id': 'playbook_002',
+            'content': """
+            Customer Success Playbook v3.2 - High-Touch Intervention
+            
+            For at-risk customers with high support volume:
+            1. Acknowledge pain points in personalized outreach
+            2. Assign dedicated CSM for 90 days
+            3. Weekly check-ins during stabilization period
+            4. Product optimization session within 2 weeks
+            5. Executive sponsor call if no improvement in 30 days
+            
+            Success rate: 65% for customers with >10 tickets/month
+            Timeline: 90-day intervention period
+            """,
+            'metadata': {
+                'type': 'playbook',
+                'focus': 'support_intensive',
+                'success_rate': 0.65
+            }
+        }
+    ]
+    
+    store.add_documents_bulk(sample_docs)
+    
+    # Test retrieval
+    results = store.retrieve("enterprise customer with low engagement")
+    for doc in results:
+        print(f"\n{doc['id']}: {doc['content'][:200]}...")
