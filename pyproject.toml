@@ -41,6 +41,7 @@ dependencies = [
     "faker>=40.1.2",
     "xgboost>=3.2.0",
     "numpy<2",
+    "python-docx>=1.2.0",
 ]
 [tool.uv]
 required-environments = [
