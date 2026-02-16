@@ -1,6 +1,6 @@
 from pathlib import Path
 from loguru import logger
-from typing import List,Dict
+from typing import List,Dict,Callable
 from pypdf import PdfReader
 from docx import Document
 
@@ -23,7 +23,7 @@ def read_docx(path:Path)->str:
     return "\n".join(texts)
 
 
-READERS:dict [str,callable[[Path],str]]={
+READERS:dict [str,Callable[[Path],str]]={
     ".txt": read_txt,
     ".md": read_md,
     ".pdf": read_pdf,
