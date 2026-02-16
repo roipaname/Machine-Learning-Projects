@@ -6,12 +6,12 @@ from loguru import logger
 import os
 from pathlib import Path
 from typing import List,Dict 
-
+from config.settings import BASE_DIR
 class RAGDocumentStore:
     """
     Vector database for business strategy documents
     """
-    def __init__(self,persist_directory='data/rag_db'):
+    def __init__(self,persist_directory=str(BASE_DIR /'data/rag_db')):
         self.embedder=SentenceTransformer('all-MiniLM-L6-v2')
         self.client=chromadb.Client(
             Settings(
@@ -36,6 +36,7 @@ class RAGDocumentStore:
             metadatas=[metadata],
             embeddings=[embedding]
         )
+        
         logger.success(f"Document {doc_id} added to RAG Document Store")
     def add_documents_bulk(self, documents: List[Dict]):
         """
