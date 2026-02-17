@@ -13,7 +13,7 @@ load_dotenv()
 # Project root directory
 BASE_DIR=Path(__file__).resolve().parent.parent
 DATA_DIR=BASE_DIR / 'data'
-RAG_DIR=BASE_DIR /'rag_db'
+RAG_DIR=DATA_DIR /'rag_db'
 BUSINESS_STRATEGY_DOCS_DIR=DATA_DIR / 'business_strategy_docs'
 MODELS_DIR=BASE_DIR / 'models'
 LOGS_DIR=BASE_DIR  /' logs'
@@ -27,7 +27,7 @@ KAGGLE_TEST_DATASET=DATA_DIR / 'raw/test.csv'
 SRC_DIR = BASE_DIR / "src"
 MODEL_DIR = SRC_DIR / "ml_models"
 PROMPT_DIR = SRC_DIR / "prompt_engineering"
-RAG_DIR = SRC_DIR / "rag"
+
 
 NOTEBOOKS_DIR = BASE_DIR / "notebooks"
 TESTS_DIR = BASE_DIR / "tests"

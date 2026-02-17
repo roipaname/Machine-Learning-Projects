@@ -12,13 +12,9 @@ class RAGDocumentStore:
     Vector database for business strategy documents
     """
     def __init__(self,persist_directory=str(RAG_DIR)):
+        print(f"Initializing RAG Document Store with directory: {persist_directory}")
         self.embedder=SentenceTransformer('all-MiniLM-L6-v2')
-        self.client=chromadb.Client(
-            Settings(
-                persist_directory=persist_directory,
-                anonymized_telemetry=False
-            )
-        )
+        self.client = chromadb.PersistentClient(path=persist_directory)
         try:
             self.collection=self.client.get_collection(name='retention_strategies')
         except:
@@ -36,6 +32,7 @@ class RAGDocumentStore:
             metadatas=[metadata],
             embeddings=[embedding]
         )
+        
         
         logger.success(f"Document {doc_id} added to RAG Document Store")
     def add_documents_bulk(self, documents: List[Dict]):
