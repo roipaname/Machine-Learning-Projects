@@ -260,7 +260,7 @@ data/logs/
 # Models (large files)
 data/models/*.pkl
 data/models/*.joblib
-
+models/.cache/huggingface/
 # IDE
 .vscode/
 .idea/
