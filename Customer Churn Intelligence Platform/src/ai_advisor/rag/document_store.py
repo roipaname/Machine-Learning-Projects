@@ -1,61 +1,52 @@
-from sentence_transformers import SentenceTransformer
+from sentence_transfromers import SentenceTransformer
 import chromadb
-from chromadb.config import Settings
-from chromadb.utils import embedding_functions
-from loguru import logger
-import os
 from pathlib import Path
-from typing import List,Dict 
-from config.settings import BASE_DIR,RAG_DIR
+from loguru import logger
+from config.settings import RAG_DIR
+from typing import List,Dict,Any
+
 class RAGDocumentStore:
-    """
-    Vector database for business strategy documents
-    """
-    def __init__(self,persist_directory=str(RAG_DIR)):
-        print(f"Initializing RAG Document Store with directory: {persist_directory}")
-        self.embedder=SentenceTransformer('all-MiniLM-L6-v2')
-        self.client = chromadb.PersistentClient(path=persist_directory)
+    def __init__(self,persist_dir=str(RAG_DIR),embedding_model_name:str="all-MiniLM-L6-v2"):
+        self.persist_dir=persist_dir
+        self.embedding_model=embedding_model_name
+        self.embedder=SentenceTransformer(embedding_model_name)
+        self.client=chromadb.PersistentClient(path=self.persist_dir)
+
         try:
-            self.collection=self.client.get_collection(name='retention_strategies')
+            self.collection=self.client.get_collection(name="retention_strategies")
         except:
-            self.collection=self.client.create_collection("retention_strategies")
+            self.collection=self.client.create_collection(name="retention_strategies",embedding_function=self.embedder.encode)
         logger.success("RAG Document Store initialized")
-    def add_document(self,doc_id:str,content:str,metadata:Dict):
+
+    def add_document(self,doc_id:str,content:str,metedata:Dict[str,Any]):
         """
         Add business strategy document to knowledge base
         """
         embedding=self.embedder.encode(content).tolist()
-
         self.collection.add(
             ids=[doc_id],
             documents=[content],
-            metadatas=[metadata],
+            mmetadatas=[metedata],
             embeddings=[embedding]
         )
-        
-        
         logger.success(f"Document {doc_id} added to RAG Document Store")
-    def add_documents_bulk(self, documents: List[Dict]):
+    def add_documents(self,docs:List[Dict[str,Any]]):
         """
-        Bulk upload documents
-        Each document: {'id': str, 'content': str, 'metadata': dict}
+        Add multiple business strategy documents to knowledge base
         """
-        
-        ids = [doc['id'] for doc in documents]
-        contents = [doc['content'] for doc in documents]
-        metadatas = [doc['metadata'] for doc in documents]
-        
-        embeddings = self.embedder.encode(contents).tolist()
-        
+        doc_ids=[doc['doc_id'] for doc in docs]
+        contents=[doc['content'] for doc in docs]
+        metadatas=[doc['metadata'] for doc in docs]
+        embeddings=self.embedder.encode(contents).tolist()
         self.collection.add(
-            ids=ids,
-            embeddings=embeddings,
+            ids=doc_ids,
             documents=contents,
-            metadatas=metadatas
+            metadatas=metadatas,
+            embeddings=embeddings
         )
-        
-        logger.success(f"Added {len(documents)} documents")
-    def retrieve(self,query:str,customer_context: Dict = None,top_k:int=5)->List[Dict]:
+        logger.success(f" {len(doc_ids)} documents added to RAG Document Store")
+
+    def retreive(self,query:str,top_k:int=5,customer_context:Dict=None):
         """
         Retrieve relevant strategy documents
         """
@@ -67,24 +58,24 @@ class RAGDocumentStore:
             Query: {query}
             """
         else:
-            enhanced_query = query
-        query_embedding=self.embedder.encode(enhanced_query).tolist()
+            enhanced_query=query
+        embedding=self.embedder.encode(enhanced_query).tolist()
         results=self.collection.query(
-            query_embeddings=[query_embedding],
-            n_results=top_k
+            query_embeddings=[embedding],
+            n_results=top_k,
+            include=['documents','metadatas','embeddings','ids']
         )
-        retrieved_docs = []
+        retrieved_docs=[]
         for i in range(len(results['ids'][0])):
             retrieved_docs.append({
-                'id': results['ids'][0][i],
-                'content': results['documents'][0][i],
-                'metadata': results['metadatas'][0][i],
+                "doc_id":results['ids'][0][i],
+                "content":results['documents'][0][i],
+                "metadata":results['metadatas'][0][i],
+                "embedding":results['embeddings'][0][i],
                 'score': results['distances'][0][i] if 'distances' in results else None
             })
-        
         logger.info(f"Retrieved {len(retrieved_docs)} documents for query")
         return retrieved_docs
-
 
 if __name__ == "__main__":
     store = RAGDocumentStore()
