@@ -280,3 +280,5 @@ Thumbs.db
 htmlcov/
 *.csv
 *.joblib
+*.gguf.lock
+*.gguf.metadata
