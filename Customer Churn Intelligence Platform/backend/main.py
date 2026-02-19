@@ -1,1 +1,2 @@
 from fastapi import FastAPI,HTTTPException,BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
