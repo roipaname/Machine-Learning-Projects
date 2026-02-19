@@ -6,6 +6,7 @@ import joblib
 from loguru import logger
 from config.settings import MODELS_DIR,COLUMNS_TO_EXCLUDE
 from src.models.classifier import ChurnPredictor
+from database.operations import get_accounts_by_company_name
 class CustomerContextBuilder:
     def __init__(self, model_type:str="random_forest"):
         self.model_type=model_type

@@ -11,6 +11,7 @@ from src.ai_advisor.rag.document_store import RAGDocumentStore
 from config.settings import LOGS_DIR
 from backend.helpers import _make_request_id,_now
 from backend.schema import AdviceRequest,AdviceResponse,ContextResponse,BulkAdviceRequest,BulkAdviceResponse,HealthResponse,CustomerPredictionRequest
+from database.operations import get_accounts_by_company_name
 app=FastAPI(
     title="Customer Churn Intelligence Platform",
     description="AI-powered churn prediction and intervention advisor",
@@ -200,3 +201,15 @@ async def get_advice_by_risk_tier(
         "errors":     errors,
     }
 
+@app.get("/accounts/{company_name}", tags=["Data"] )
+async def get_accounts_by_company(company_name: str):
+    """
+    Example endpoint to demonstrate fetching accounts by company name.
+    This can be used for testing database connectivity and query functionality.
+    """
+    try:
+        accounts = get_accounts_by_company_name(company_name)
+        return {"company_name": company_name, "accounts": [acc.__dict__ for acc in accounts]}
+    except Exception as e:
+        logger.error(f"Error fetching accounts for company {company_name}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

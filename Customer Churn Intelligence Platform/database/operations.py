@@ -38,15 +38,23 @@ def check_if_account_exist(account_id:str):
         logger.error(f"failed to check if account with Id {account_id} exist")
         raise
 
-def get_accounts_by_company_name(company_name:str)->List[Accounts]:
+def get_accounts_by_company_name(company_name:str,page: int = 1,
+    page_size: int = 100)->List[Accounts]:
     try:
         with db.get_db() as session:
 
             if company_name:
-                results=session.query(Accounts).filter_by(
-                    company_name=company_name
+                query=session.query(Accounts).filter(
+                    Accounts.company_name.ilike(f"%{company_name}%")
                 ).all()
-                return results
+            offset = (page - 1) * page_size
+            return (
+                query
+                .order_by(Accounts.id)
+                .limit(page_size)
+                .offset(offset)
+                .all()
+            )
     except Exception as e:
         logger.error(f"failed to check if account withs with company name {company_name} exist")
         raise
