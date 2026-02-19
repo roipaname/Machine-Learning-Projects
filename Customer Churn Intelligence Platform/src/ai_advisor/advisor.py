@@ -62,15 +62,20 @@ class ChurnAdvisor:
         """
         
         context = self.context_builder.build_context(customer_id)
+        # Guard: if context builder returned no data
+        if context.get("context") == "No data available to build context":
+            return f"⚠️  No data found for customer {customer_id}. Cannot generate advice."
 
-        summary = self._build_customer_summary(customer_data)
 
-        context = {
-            "account_info": {"tier": customer_data.get("tier")},
-            "risk_tier": customer_data.get("risk_tier", "unknown"),
+        summary = self._build_customer_summary(context)
+
+        # Pass structured context to RAG retrieval for smarter matching
+        rag_context = {
+            "account_info": context.get("account_info", {}),
+            "risk_tier":    context.get("risk_tier", "unknown"),
         }
 
-        docs = self.store.retrieve(query=summary, top_k=3, customer_context=context)
+        docs = self.store.retrieve(query=summary, top_k=3, customer_context=rag_context)
 
         context_block = "\n\n".join(
             f"[{doc['doc_id']}] (relevance score: {doc['score']:.3f})\n{doc['content']}"
@@ -104,7 +109,7 @@ class ChurnAdvisor:
         response = self.client.chat_completion(
             messages=messages,
             model=HF_MODEL,
-            max_tokens=1000,
+            max_tokens=450,
             temperature=0.3,
         )
         return response.choices[0].message.content.strip()
@@ -113,22 +118,12 @@ class ChurnAdvisor:
 # ── Demo ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     # Set seed=True only the first time to populate ChromaDB
-    advisor = ChurnAdvisor(seed=True)
+    advisor = ChurnAdvisor(seed=False)
 
-    customer = {
-        "name":            "Acme Corp",
-        "tier":            "Enterprise",
-        "mrr":             8500,
-        "login_trend":     "down 65% over last 30 days",
-        "tickets":         "3 billing complaints this month",
-        "feature_usage":   "stopped using core dashboard feature",
-        "days_to_renewal": 38,
-        "last_sentiment":  "frustrated, mentioned switching to competitor",
-        "risk_tier":       "High",
-    }
+    customer_id = "cb6761fd-f237-4a50-84e4-a38285b77648"  # replace with real ID
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("CHURN ADVISOR REPORT")
-    print("="*60)
-    advice = advisor.advise(customer)
+    print("=" * 60)
+    advice = advisor.advise(customer_id)
     print(advice)
