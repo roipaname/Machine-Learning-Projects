@@ -12,25 +12,57 @@ class ChurnAdvisor:
     def __init__(self, seed: bool = False):
         self.store  = RAGDocumentStore()
         self.client = InferenceClient(api_key=HF_TOKEN)
+        self.context_builder = CustomerContextBuilder()
 
-    def _build_customer_summary(self, customer: dict) -> str:
+    def _build_customer_summary(self, context: dict) -> str:
+        """
+        Build a structured natural-language summary from CustomerContextBuilder output.
+        """
+        account   = context.get("account_info", {})
+        engage    = context.get("engagement_signals", {})
+        support   = context.get("support_signals", {})
+        billing   = context.get("billing_signals", {})
+        drivers   = context.get("top_churn_drivers", [])
+
+        # Format top churn drivers as a readable list
+        drivers_str = ", ".join(
+            f"{d['feature']}={d['value']}" for d in drivers
+        ) if drivers else "N/A"
+
         return (
-            f"Customer: {customer.get('name', 'Unknown')}\n"
-            f"Segment / Tier: {customer.get('tier', 'N/A')}\n"
-            f"MRR: ${customer.get('mrr', 0)}\n"
-            f"Login trend: {customer.get('login_trend', 'N/A')}\n"
-            f"Support tickets: {customer.get('tickets', 'N/A')}\n"
-            f"Feature usage: {customer.get('feature_usage', 'N/A')}\n"
-            f"Days to renewal: {customer.get('days_to_renewal', 'N/A')}\n"
-            f"Last sentiment: {customer.get('last_sentiment', 'N/A')}"
+            f"Customer ID:          {context.get('customer_id', 'Unknown')}\n"
+            f"Churn Probability:    {context.get('churn_probability', 'N/A'):.0%}\n"
+            f"Risk Tier:            {context.get('risk_tier', 'N/A')}\n"
+            "\n── Account ──\n"
+            f"  Tier:               {account.get('account_tier', 'N/A')}\n"
+            f"  Segment:            {account.get('customer_segment', 'N/A')}\n"
+            f"  Contract Type:      {account.get('contract_type', 'N/A')}\n"
+            f"  Company Size:       {account.get('company_size', 'N/A')}\n"
+            f"  Monthly Fee:        ${account.get('monthly_fee', 0)}\n"
+            f"  Days to Renewal:    {account.get('days_until_renewal', 'N/A')}\n"
+            "\n── Engagement ──\n"
+            f"  Usage (30d):        {engage.get('usage_count_30d', 'N/A')}\n"
+            f"  Usage (60d):        {engage.get('usage_count_60d', 'N/A')}\n"
+            f"  Usage Decline:      {engage.get('usage_decline_30d_vs_60d', 'N/A')}\n"
+            f"  Days Since Active:  {engage.get('days_since_last_activity', 'N/A')}\n"
+            "\n── Support ──\n"
+            f"  Tickets (30d):      {support.get('tickets_30d', 'N/A')}\n"
+            f"  High-Pri Tickets:   {support.get('high_priority_tickets_90d', 'N/A')}\n"
+            f"  Avg Satisfaction:   {support.get('avg_satisfaction_score', 'N/A')}\n"
+            "\n── Billing ──\n"
+            f"  Unpaid Invoices:    {billing.get('unpaid_invoices', 'N/A')}\n"
+            f"  Avg Days Late:      {billing.get('avg_days_late', 'N/A')}\n"
+            "\n── Top Churn Drivers ──\n"
+            f"  {drivers_str}"
         )
 
     def advise(self, customer_id: str) -> str:
         """
         Main entry point. Pass a customer dict, get back advisory text.
         """
-        customer_context_builder=CustomerContextBuilder()
-        customer_data=customer_context_builder.build_context(customer_id=customer_id)
+        
+        context = self.context_builder.build_context(customer_id)
+
         summary = self._build_customer_summary(customer_data)
 
         context = {
