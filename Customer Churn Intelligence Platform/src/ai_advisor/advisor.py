@@ -1,59 +1,10 @@
-"""
-churn_advisor.py
-----------------
-Simplified churn advisor built on top of RAGDocumentStore.
-Uses HuggingFace Inference API (free tier) for LLM reasoning.
 
-Usage:
-    python churn_advisor.py
-"""
 
 from huggingface_hub import InferenceClient
 from src.ai_advisor.rag.document_store import RAGDocumentStore
-from config.settings import HF_TOKEN
-
+from config.settings import HF_TOKEN,HF_MODEL
+from src.ai_advisor.context_builder import CustomerContextBuilder
 # ── Config ────────────────────────────────────────────────────────────────────
-
-MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
-
-# ── Seed data (run once, then comment out) ────────────────────────────────────
-SEED_DOCS = [
-    {
-        "doc_id": "strategy_001",
-        "content": (
-            "Q4 2024 Retention Analysis - Enterprise Tech Segment. "
-            "For enterprise customers (MRR >$5k) showing engagement decline >40%: "
-            "Executive Business Review within 5 days gives 73% save rate. "
-            "Combined with product training it rises to 81%. "
-            "Strategic discount 15-20% gives 68% save rate standalone. "
-            "Best approach: EBR + training + conditional discount."
-        ),
-        "metadata": {"type": "analyst_report", "segment": "Enterprise", "success_rate": 0.73},
-    },
-    {
-        "doc_id": "playbook_001",
-        "content": (
-            "High-Touch Intervention Playbook for customers with high support volume. "
-            "Steps: acknowledge pain points, assign dedicated CSM for 90 days, "
-            "weekly check-ins, product optimisation session within 2 weeks, "
-            "executive sponsor call if no improvement after 30 days. "
-            "Success rate: 65% for customers with >10 tickets/month."
-        ),
-        "metadata": {"type": "playbook", "focus": "support_intensive", "success_rate": 0.65},
-    },
-    {
-        "doc_id": "playbook_002",
-        "content": (
-            "SMB Churn Prevention Playbook. "
-            "For SMB customers (MRR <$1k) with login drop >50%: "
-            "Send personalised email sequence (3 emails over 2 weeks). "
-            "Offer free onboarding refresh webinar. "
-            "If no response, offer 10% loyalty discount. "
-            "Success rate: 48% for SMB segment."
-        ),
-        "metadata": {"type": "playbook", "segment": "SMB", "success_rate": 0.48},
-    },
-]
 
 
 # ── Core advisor ──────────────────────────────────────────────────────────────
@@ -61,10 +12,6 @@ class ChurnAdvisor:
     def __init__(self, seed: bool = False):
         self.store  = RAGDocumentStore()
         self.client = InferenceClient(api_key=HF_TOKEN)
-
-        if seed:
-            self.store.add_documents(SEED_DOCS)
-            print("✅ Seed documents loaded into ChromaDB")
 
     def _build_customer_summary(self, customer: dict) -> str:
         return (
@@ -78,15 +25,17 @@ class ChurnAdvisor:
             f"Last sentiment: {customer.get('last_sentiment', 'N/A')}"
         )
 
-    def advise(self, customer: dict) -> str:
+    def advise(self, customer_id: str) -> str:
         """
         Main entry point. Pass a customer dict, get back advisory text.
         """
-        summary = self._build_customer_summary(customer)
+        customer_context_builder=CustomerContextBuilder()
+        customer_data=customer_context_builder.build_context(customer_id=customer_id)
+        summary = self._build_customer_summary(customer_data)
 
         context = {
-            "account_info": {"tier": customer.get("tier")},
-            "risk_tier": customer.get("risk_tier", "unknown"),
+            "account_info": {"tier": customer_data.get("tier")},
+            "risk_tier": customer_data.get("risk_tier", "unknown"),
         }
 
         docs = self.store.retrieve(query=summary, top_k=3, customer_context=context)
@@ -122,7 +71,7 @@ class ChurnAdvisor:
 
         response = self.client.chat_completion(
             messages=messages,
-            model=MODEL,
+            model=HF_MODEL,
             max_tokens=1000,
             temperature=0.3,
         )
