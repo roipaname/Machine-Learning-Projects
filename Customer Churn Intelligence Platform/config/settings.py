@@ -31,7 +31,7 @@ PROMPT_DIR = SRC_DIR / "prompt_engineering"
 
 NOTEBOOKS_DIR = BASE_DIR / "notebooks"
 TESTS_DIR = BASE_DIR / "tests"
-
+HF_TOKEN=os.getenv("HF_API_TOKEN")
 
 for directory in [DATA_DIR, MODELS_DIR, LOGS_DIR,DATA_RAW_DIR,DATA_PROCESSED_DIR,DATA_FEATURE_DIR]:
     directory.mkdir(parents=True, exist_ok=True)

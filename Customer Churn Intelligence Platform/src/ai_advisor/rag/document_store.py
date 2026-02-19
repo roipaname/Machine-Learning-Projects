@@ -1,4 +1,4 @@
-from sentence_transfromers import SentenceTransformer
+from sentence_transformers import SentenceTransformer
 import chromadb
 from pathlib import Path
 from loguru import logger
@@ -46,7 +46,7 @@ class RAGDocumentStore:
         )
         logger.success(f" {len(doc_ids)} documents added to RAG Document Store")
 
-    def retreive(self,query:str,top_k:int=5,customer_context:Dict=None):
+    def retrieve(self,query:str,top_k:int=5,customer_context:Dict=None):
         """
         Retrieve relevant strategy documents
         """
@@ -63,7 +63,7 @@ class RAGDocumentStore:
         results=self.collection.query(
             query_embeddings=[embedding],
             n_results=top_k,
-            include=['documents','metadatas','embeddings','ids']
+            include=['documents','metadatas','embeddings','distances']
         )
         retrieved_docs=[]
         for i in range(len(results['ids'][0])):
@@ -72,7 +72,7 @@ class RAGDocumentStore:
                 "content":results['documents'][0][i],
                 "metadata":results['metadatas'][0][i],
                 "embedding":results['embeddings'][0][i],
-                'score': results['distances'][0][i] if 'distances' in results else None
+                "score": 1 / (1 + results['distances'][0][i])  if 'distances' in results else None
             })
         logger.info(f"Retrieved {len(retrieved_docs)} documents for query")
         return retrieved_docs
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         }
     ]
     
-    store.add_documents_bulk(sample_docs)
+    store.add_documents(sample_docs)
     
     # Test retrieval
     results = store.retrieve("enterprise customer with low engagement")
