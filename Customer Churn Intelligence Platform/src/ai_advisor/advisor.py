@@ -109,7 +109,7 @@ class ChurnAdvisor:
         response = self.client.chat_completion(
             messages=messages,
             model=HF_MODEL,
-            max_tokens=450,
+            max_tokens=2000,
             temperature=0.3,
         )
         return response.choices[0].message.content.strip()
