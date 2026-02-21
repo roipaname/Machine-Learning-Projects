@@ -6,6 +6,7 @@ from pathlib import Path
 # ── Paths ────────────────────────────────────────────────────
 ROOT_DIR   = Path(__file__).resolve().parent
 STYLES_DIR = ROOT_DIR / "styles"
+ICONS_DIR=ROOT_DIR/'icons'
 CSS_FILE   = STYLES_DIR / "style.css"
 
 # ── Backend ──────────────────────────────────────────────────
@@ -17,7 +18,7 @@ BULK_MAX_IDS    = 20
 
 # ── UI ───────────────────────────────────────────────────────
 PAGE_TITLE  = "ZiyaBank · AI Advisor"
-PAGE_ICON   = "🏦"
+PAGE_ICON   = ICONS_DIR/'ziyabank.png'
 PAGES       = ["Account Advisor", "Bulk Risk View", "Platform Health"]
 RISK_TIERS  = ["All", "Critical", "High", "Medium", "Low"]
 
