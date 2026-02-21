@@ -181,7 +181,7 @@ def render() -> None:
     col_input, col_btn = st.columns([5, 1])
     with col_input:
         customer_id = st.text_input(
-            "",
+            "Customer ID",
             placeholder="Enter customer ID or search…",
             label_visibility="collapsed",
             key="cid_input",

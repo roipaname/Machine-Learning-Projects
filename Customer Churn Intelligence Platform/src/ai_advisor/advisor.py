@@ -120,7 +120,7 @@ if __name__ == "__main__":
     # Set seed=True only the first time to populate ChromaDB
     advisor = ChurnAdvisor(seed=False)
 
-    customer_id = "cb6761fd-f237-4a50-84e4-a38285b77648"  # replace with real ID
+    customer_id = "cb6761fd-f237-4a50-84e4-a38285b77648"  
 
     print("\n" + "=" * 60)
     print("CHURN ADVISOR REPORT")

@@ -44,7 +44,7 @@ with st.sidebar:
     st.markdown(brand_bar(), unsafe_allow_html=True)
 
     page = st.radio(
-        "",
+        "Navigation",
         PAGES,
         label_visibility="collapsed",
     )

@@ -1,7 +1,7 @@
 from loguru import logger
 from database.connection import DatabaseConnection
 from database.schemas import Accounts,Customers,Subscriptions,UsageEvents,BillingInvoices,SupportTickets,SubscriptionStatus,Churn_Labels
-from typing import List,Dict,Optional
+from typing import List,Dict,Optional,Tuple
 from sqlalchemy import func, and_, not_
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -38,27 +38,41 @@ def check_if_account_exist(account_id:str):
         logger.error(f"failed to check if account with Id {account_id} exist")
         raise
 
-def get_accounts_by_company_name(company_name:str,page: int = 1,
-    page_size: int = 100)->List[Accounts]:
+def get_accounts_by_company_name(
+    company_name: str,
+    page: int = 1,
+    page_size: int = 100
+):
     try:
         with db.get_db() as session:
-
-            if company_name:
-                query=session.query(Accounts).filter(
-                    Accounts.company_name.ilike(f"%{company_name}%")
-                ).all()
             offset = (page - 1) * page_size
-            return (
-                query
-                .order_by(Accounts.id)
+
+            rows = (
+                session.query(
+                    Accounts.account_id,
+                    Accounts.company_name,
+                    Customers.customer_id
+                )
+                .join(Customers, Customers.account_id == Accounts.account_id)
+                .filter(Accounts.company_name.ilike(f"%{company_name}%"))
+                .order_by(Accounts.created_at)
                 .limit(page_size)
                 .offset(offset)
                 .all()
             )
+
+            return [
+                {
+                    "account_id": r.account_id,
+                    "company_name": r.company_name,
+                    "customer_id": r.customer_id,
+                }
+                for r in rows
+            ]
+
     except Exception as e:
-        logger.error(f"failed to check if account withs with company name {company_name} exist")
+        logger.error(f"Account lookup failed: {e}")
         raise
-    
 def update_account(account_id: str, updates: Dict) -> bool:
     try:
         with db.get_db() as session:

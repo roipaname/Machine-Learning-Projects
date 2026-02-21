@@ -83,14 +83,14 @@ async def get_customer_context(customer_id:str):
         top_churn_drivers=context.get("top_churn_drivers", []),
     )
 
-@app.get("/advice",response_model=AdviceResponse,tags=["Advice"])
-async def get_advice(request:AdviceRequest):
+@app.get("/advice/{customer_id}",response_model=AdviceResponse,tags=["Advice"])
+async def get_advice(customer_id:str):
     """
     Run the full churn advisor pipeline for a single customer:
     context build → RAG retrieval → LLM recommendation.
     """
     _check_ready()
-    customer_id = request.customer_id
+    
     logger.info(f"Advice requested for customer {customer_id}")
     context=context_builder.build_context(customer_id)
     if context.get("context") == "No data available to build context":
