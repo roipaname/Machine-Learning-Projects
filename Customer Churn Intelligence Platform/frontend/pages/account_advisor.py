@@ -259,8 +259,7 @@ def render() -> None:
     if "last_advice" in st.session_state:
         advice_text = st.session_state["last_advice"]
         st.markdown(
-            advisor_panel(format_advice_as_html(advice_text)),
-            unsafe_allow_html=True,
+            advice_text
         )
         st.markdown('<div style="margin-top:16px">', unsafe_allow_html=True)
         _render_advisor_actions(customer_id, advice_text)

@@ -108,7 +108,7 @@ def get_advice(customer_id: str) -> dict | None:
     Uses a longer timeout to accommodate LLM inference.
     """
     try:
-        return _get(f"/advice?customer_id={customer_id}", timeout=API_TIMEOUT_LLM)
+        return _get(f"/advice/{customer_id.strip()}", timeout=API_TIMEOUT_LLM)
     except BackendUnavailableError:
         st.error("⚠️  Cannot reach backend. Is the FastAPI server running?")
         return None

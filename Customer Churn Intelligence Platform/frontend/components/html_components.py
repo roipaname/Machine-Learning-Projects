@@ -137,10 +137,12 @@ def signal_table(signals: dict, label_map: dict[str, str] | None = None) -> str:
 
 # ── Driver Chips ─────────────────────────────────────────────
 
-def driver_chips(drivers: list[str]) -> str:
+def driver_chips(drivers: list[dict]) -> str:
     """Render churn driver tags."""
     chips = "".join(
-        f'<span class="driver-chip">{driver}</span>' for driver in drivers
+        f'<span class="driver-chip">{d.get("feature", "—")}: {d.get("value", "—")}</span>'
+        for d in drivers
+        if isinstance(d, dict)
     )
     return f'<div style="padding:4px 0">{chips}</div>'
 
