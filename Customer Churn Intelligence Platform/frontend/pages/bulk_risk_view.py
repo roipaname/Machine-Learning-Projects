@@ -35,6 +35,7 @@ def _render_result_card(result: dict) -> None:
     company_name = result.get("account_info", {}).get(
         "company_name", customer_id[:16] + "…"
     )
+    
     drivers = result.get("top_churn_drivers", [])
 
     drivers_text = ", ".join(d.get("feature", "—") if isinstance(d, dict) else str(d) for d in drivers[:3]) or "—"
