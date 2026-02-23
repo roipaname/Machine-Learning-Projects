@@ -25,7 +25,7 @@ import streamlit as st
 
 from config import PAGE_ICON, PAGE_TITLE, PAGES
 from components.html_components import brand_bar
-from pages import account_advisor, bulk_risk_view, platform_health
+from pages import account_advisor, bulk_risk_view, platform_health,knowledge_base
 from utils.style_loader import inject_css
 
 # ── Page config (must be first Streamlit call) ───────────────
@@ -60,6 +60,7 @@ with st.sidebar:
 _PAGE_MAP = {
     "Account Advisor":  account_advisor.render,
     "Bulk Risk View":   bulk_risk_view.render,
+    "Knowledge Base":   knowledge_base.render,
     "Platform Health":  platform_health.render,
 }
 

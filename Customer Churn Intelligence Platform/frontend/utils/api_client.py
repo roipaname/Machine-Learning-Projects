@@ -149,3 +149,27 @@ def get_accounts_by_company(company_name: str) -> dict | None:
         else:
             st.error(f"Search error {exc.status_code}: {exc}")
         return None
+
+def upload_document(
+    filepath: str,
+    original_name: str,
+    doc_type: str = "other",
+    segment: str = "All",
+) -> dict | None:
+    """Upload a local file to the RAG knowledge base."""
+    try:
+        with open(filepath, "rb") as f:
+            response = requests.post(
+                f"{API_BASE}/knowledge-base/upload",
+                files={"file": (original_name, f)},
+                data={"doc_type": doc_type, "segment": segment},
+                timeout=API_TIMEOUT_STD,
+            )
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        st.error("⚠️  Cannot reach backend. Is the FastAPI server running?")
+        return None
+    except requests.exceptions.HTTPError as exc:
+        st.error(f"Upload error {exc.response.status_code}: {exc.response.text}")
+        return None

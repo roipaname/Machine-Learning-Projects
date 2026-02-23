@@ -26,7 +26,7 @@ class RAGDocumentStore:
         self.collection.add(
             ids=[doc_id],
             documents=[content],
-            mmetadatas=[metedata],
+            metadatas=[metedata],
             embeddings=[embedding]
         )
         logger.success(f"Document {doc_id} added to RAG Document Store")
