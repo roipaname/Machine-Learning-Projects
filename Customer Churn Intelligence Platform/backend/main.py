@@ -1,10 +1,14 @@
+#backend.main
 from fastapi import FastAPI,HTTPException,BackgroundTasks,UploadFile,File,Form
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional,Dict,Any,List
 from datetime import datetime
 from loguru import logger
 import uuid
-
+import shutil
+import tempfile
+from pathlib import Path
+from src.utils.file_readers import read_file_to_text
 from src.ai_advisor.advisor import ChurnAdvisor
 from src.ai_advisor.context_builder import CustomerContextBuilder
 from src.ai_advisor.rag.document_store import RAGDocumentStore
@@ -48,7 +52,9 @@ def _check_ready():
         raise HTTPException(status_code=503, detail="Service not ready. Models still loading.")
     
 
-    
+def _check_store():
+    if store is None:
+        raise HTTPException(status_code=503, detail="RAG store not ready.")   
 @app.get("/health", response_model=HealthResponse, tags=["System"])
 async def health_check():
     return HealthResponse(
@@ -213,3 +219,80 @@ async def get_accounts_by_company(company_name: str):
     except Exception as e:
         logger.error(f"Error fetching accounts for company {company_name}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# ── Chunking helper ───────────────────────────────────────────
+
+CHUNK_SIZE    = 800
+CHUNK_OVERLAP = 100
+
+def _chunk_text(text: str) -> list[str]:
+    chunks, start = [], 0
+    while start < len(text):
+        chunks.append(text[start : start + CHUNK_SIZE])
+        start += CHUNK_SIZE - CHUNK_OVERLAP
+    return chunks
+
+
+# ── Knowledge Base ────────────────────────────────────────────
+
+@app.post("/knowledge-base/upload", tags=["Knowledge Base"])
+async def upload_document(
+    file: UploadFile = File(...),
+    doc_type: str = Form("other"),
+    segment: str = Form("All"),
+) -> dict:
+    """
+    Upload a .txt / .md / .pdf / .docx file, chunk it, and ingest
+    all chunks into the RAG vector store.
+    """
+    _check_store()
+
+    suffix = Path(file.filename).suffix.lower()
+    if suffix not in {".txt", ".md", ".pdf", ".docx"}:
+        raise HTTPException(status_code=415, detail=f"Unsupported file type: {suffix}")
+
+    # Persist upload to a temp file so file_readers can use a real Path
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        shutil.copyfileobj(file.file, tmp)
+        tmp_path = Path(tmp.name)
+
+    try:
+        text = read_file_to_text(tmp_path)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+    chunks  = _chunk_text(text)
+    base_id = f"upload_{uuid.uuid4().hex[:8]}"
+
+    docs = [
+        {
+            "doc_id":   f"{base_id}_chunk{i}",
+            "content":  chunk,
+            "metadata": {
+                "source":        file.filename,
+                "doc_type":      doc_type,
+                "segment":       segment,
+                "chunk_index":   i,
+                "total_chunks":  len(chunks),
+            },
+        }
+        for i, chunk in enumerate(chunks)
+    ]
+
+    try:
+        store.add_documents(docs)
+    except Exception as exc:
+        logger.error(f"RAG ingestion failed for '{file.filename}': {exc}")
+        raise HTTPException(status_code=500, detail="Failed to ingest document.")
+
+    logger.success(f"Ingested {len(docs)} chunks from '{file.filename}' (base_id: {base_id})")
+    return {
+        "doc_id":       base_id,
+        "filename":     file.filename,
+        "chunks_added": len(docs),
+        "doc_type":     doc_type,
+        "segment":      segment,
+    }
