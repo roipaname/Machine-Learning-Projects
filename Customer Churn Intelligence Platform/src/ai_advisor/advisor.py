@@ -115,9 +115,7 @@ class ChurnAdvisor:
             return response.choices[0].message.content.strip()
         except HfHubHTTPError as e:
             logger.error(f"LLM service unavailable: {e}")
-            return {
-            "status": "degraded",
-            "message": "LLM service temporarily unavailable. Showing ML-only results.",}
+            return "⚠️ AI advisor temporarily unavailable. Please retry."
 
 
 
