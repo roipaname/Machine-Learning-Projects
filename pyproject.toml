@@ -44,6 +44,7 @@ dependencies = [
     "python-docx>=1.2.0",
     "llama-cpp-python>=0.3.16",
     "huggingface-hub[cli]>=0.36.2",
+    "python-multipart>=0.0.22",
 ]
 [tool.uv]
 required-environments = [

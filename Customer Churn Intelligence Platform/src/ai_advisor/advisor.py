@@ -1,11 +1,11 @@
 
-
+from huggingface_hub.errors import HfHubHTTPError
 from huggingface_hub import InferenceClient
 from src.ai_advisor.rag.document_store import RAGDocumentStore
 from config.settings import HF_TOKEN,HF_MODEL
 from src.ai_advisor.context_builder import CustomerContextBuilder
 # ── Config ────────────────────────────────────────────────────────────────────
-
+from loguru import logger
 
 # ── Core advisor ──────────────────────────────────────────────────────────────
 class ChurnAdvisor:
@@ -106,13 +106,19 @@ class ChurnAdvisor:
             },
         ]
 
-        response = self.client.chat_completion(
+        try:
+            response = self.client.chat_completion(
             messages=messages,
             model=HF_MODEL,
             max_tokens=2000,
-            temperature=0.3,
-        )
-        return response.choices[0].message.content.strip()
+            temperature=0.3,)
+            return response.choices[0].message.content.strip()
+        except HfHubHTTPError as e:
+            logger.error(f"LLM service unavailable: {e}")
+            return {
+            "status": "degraded",
+            "message": "LLM service temporarily unavailable. Showing ML-only results.",}
+
 
 
 # ── Demo ──────────────────────────────────────────────────────────────────────
