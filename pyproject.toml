@@ -50,3 +50,8 @@ dependencies = [
 required-environments = [
     "sys_platform == 'darwin' and platform_machine == 'x86_64'"
 ]
+
+[tool.uv.workspace]
+members = [
+    "Job Market Skill Analyzer",
+]
