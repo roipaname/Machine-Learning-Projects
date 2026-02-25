@@ -4,4 +4,20 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "apscheduler>=3.11.2",
+    "beautifulsoup4>=4.14.3",
+    "fastapi>=0.128.7",
+    "matplotlib>=3.10.8",
+    "pandas>=2.3.3",
+    "playwright>=1.58.0",
+    "psycopg2-binary>=2.9.11",
+    "python-dotenv>=1.2.1",
+    "requests-html>=0.10.0",
+    "scrapy>=2.14.1",
+    "seaborn>=0.13.2",
+    "spacy>=3.8.11",
+    "sqlalchemy>=2.0.46",
+    "streamlit>=1.54.0",
+    "transformers>=4.57.6",
+]

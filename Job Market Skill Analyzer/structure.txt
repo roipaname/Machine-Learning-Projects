@@ -1,0 +1,40 @@
+pip install sqlalchemy alembic psycopg2-binary python-dotenv asyncpg
+```
+
+**Project structure first:**
+```
+job-market-analyzer/
+├── .env
+├── alembic.ini
+├── alembic/
+│   └── versions/
+├── src/
+│   ├── db/
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   ├── session.py
+│   │   └── migrations/
+│   ├── scraper/
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   ├── linkedin.py
+│   │   └── indeed.py
+│   ├── nlp/
+│   │   ├── __init__.py
+│   │   ├── extractor.py
+│   │   ├── normalizer.py
+│   │   └── trends.py
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── main.py
+│   │   └── routes/
+│   ├── reports/
+│   │   ├── __init__.py
+│   │   ├── generator.py
+│   │   └── templates/
+│   ├── scheduler/
+│   │   └── jobs.py
+│   └── dashboard/
+│       └── app.py
+├── tests/
+└── requirements.txt
