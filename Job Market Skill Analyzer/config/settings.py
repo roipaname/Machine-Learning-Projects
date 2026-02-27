@@ -77,3 +77,70 @@ SIMILARITY_THRESHOLD = float(os.getenv('SIMILARITY_THRESHOLD', '0.85'))
 
 # Hash algorithm for content hashing
 HASH_ALGORITHM = os.getenv('HASH_ALGORITHM', 'sha256')
+
+
+# =========================================================
+# RAG (RETRIEVAL AUGMENTED GENERATION)
+# =========================================================
+
+RAG_CONFIG = {
+    "enabled": True,
+    "embedding_model": "text-embedding-3-large",
+    "vector_store": "faiss",  # faiss | chroma | pinecone
+    "chunk_size": 512,
+    "chunk_overlap": 64,
+    "top_k": 5,
+}
+
+
+# =========================================================
+# OUTPUT REGULARIZATION
+# =========================================================
+
+OUTPUT_RULES = {
+    "allow_probabilities": True,
+    "confidence_threshold": 0.65,
+    "disallowed_phrases": [
+        "guaranteed",
+        "100% sure",
+        "no risk"
+    ],
+    "explanation_style": "business_friendly",  # technical | exec | business
+}
+
+# =========================================================
+# DECISION INTELLIGENCE
+# =========================================================
+
+DECISION_POLICY = {
+    "high_risk_threshold": 0.8,
+    "medium_risk_threshold": 0.5,
+    "actions": {
+        "high": "immediate_retention_offer",
+        "medium": "engagement_campaign",
+        "low": "monitor_only"
+    }
+}
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+
+# Log level
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
+
+# Log file paths
+LOG_FILE = LOGS_DIR / 'app.log'
+ERROR_LOG_FILE = LOGS_DIR / 'error.log'
+
+# Log rotation
+LOG_ROTATION = os.getenv('LOG_ROTATION', '10 MB')
+LOG_RETENTION = os.getenv('LOG_RETENTION', '30 days')
+
+# Log format
+LOG_FORMAT = (
+    "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+    "<level>{level: <8}</level> | "
+    "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
+    "<level>{message}</level>"
+)
