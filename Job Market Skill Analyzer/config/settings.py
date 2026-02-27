@@ -21,9 +21,6 @@ SCRAPER_DIR=BASE_DIR/'scraper'
 for directory in [DATA_DIR,DATA_PROCESSED_DIR,DATA_RAW_DIR,LOGS_DIR,MODELS_DIR,SCRIPTS_DIR,CONFIG_DIR,SCRAPER_DIR]:
     directory.mkdir(parents=True,exist_ok=True)
 
-#Hugging Face Models
-HF_TOKEN=os.getenv("HF_API_TOKEN")
-HF_MODEL="mistralai/Mistral-7B-Instruct-v0.2"
 
 
 DB_NAME=os.getenv("DB_CHURN_NAME")
@@ -41,3 +38,42 @@ DB_POOL_SIZE = int(os.getenv('DB_POOL_SIZE', '10'))
 DB_MAX_OVERFLOW = int(os.getenv('DB_MAX_OVERFLOW', '20'))
 DB_POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '30'))
 DB_ECHO = os.getenv('DB_ECHO', 'False').lower() == 'true'
+
+"""
+Classifier and AI advisor details
+
+"""
+
+
+#Hugging Face Models
+HF_TOKEN=os.getenv("HF_API_TOKEN")
+HF_MODEL="mistralai/Mistral-7B-Instruct-v0.2"
+
+
+AVAILABLE_CLASSIFIERS=[ 'logistic_regression',
+    'naive_bayes',
+    'svm',
+    'random_forest']
+
+
+# Model versioning
+MODEL_VERSION = os.getenv('MODEL_VERSION', 'v1.0.0')
+
+# Default classifier
+DEFAULT_CLASSIFIER = os.getenv('DEFAULT_CLASSIFIERS', 'random_forest')
+
+# Training parameters
+TEST_SIZE = float(os.getenv('TEST_SIZE', '0.2'))
+RANDOM_STATE = int(os.getenv('RANDOM_STATE', '42'))
+CV_FOLDS = int(os.getenv('CV_FOLDS', '5'))
+
+
+# Minimum confidence threshold for classification
+MIN_CONFIDENCE_THRESHOLD = float(os.getenv('MIN_CONFIDENCE_THRESHOLD', '0.5'))
+
+
+# Similarity threshold for near-duplicate detection
+SIMILARITY_THRESHOLD = float(os.getenv('SIMILARITY_THRESHOLD', '0.85'))
+
+# Hash algorithm for content hashing
+HASH_ALGORITHM = os.getenv('HASH_ALGORITHM', 'sha256')
