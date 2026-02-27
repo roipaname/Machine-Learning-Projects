@@ -144,3 +144,46 @@ LOG_FORMAT = (
     "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
     "<level>{message}</level>"
 )
+
+
+# =========================================================
+# API SETTINGS
+# =========================================================
+
+API_CONFIG = {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "debug": True,
+}
+
+def get_model_config() -> Dict:
+    """Get model configuration as dictionary."""
+    return {
+        'classifier': DEFAULT_CLASSIFIER,
+        'test_size': TEST_SIZE,
+        'random_state': RANDOM_STATE,
+        'cv_folds': CV_FOLDS,
+        'model_version': MODEL_VERSION,
+        'min_confidence': MIN_CONFIDENCE_THRESHOLD
+    }
+
+
+__all__ = [
+    'BASE_DIR',
+    'DATA_DIR',
+    'MODELS_DIR',
+    'LOGS_DIR',
+    'get_model_config'
+    'KAGGLE_TRAIN_DATASET'
+]
+
+from loguru import logger
+
+logger.remove()
+logger.add(
+    LOG_FILE,
+    level=LOG_LEVEL,
+    rotation=LOG_ROTATION,
+    retention=LOG_RETENTION,
+    format=LOG_FORMAT
+)
