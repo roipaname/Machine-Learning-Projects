@@ -21,7 +21,12 @@ class prefix(enum.Enum):
     dr="dr"
     ms="ms"
     honorable="honorable"
-
+class sexes(enum.Enum):
+    male="male"
+    female="female"
+    dr="dr"
+    ms="ms"
+    honorable="honorable"
 
 class Customer(Base):
     __tablename__="customers"
