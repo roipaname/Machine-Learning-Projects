@@ -31,6 +31,7 @@ class Customer(Base):
     prefix=Column(Enum(
         prefix,name="prefix_enum"
     ),nullable=True)
+    sexe=Column(Text)
     role=Column(Enum(
         Roles,name="roles_enum"
     ),nullable=False,default="free_client")
