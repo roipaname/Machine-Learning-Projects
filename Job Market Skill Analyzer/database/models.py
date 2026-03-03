@@ -96,3 +96,9 @@ class JobPosting(Base):
                      default=RemoteType.UNKNOWN,
                      nullable=False,
                  )
+
+    #Compensations
+    salary_min: Mapped[Optional[float]]=mapped_column(Numeric(12,2))
+    salary_max: Mapped[Optional[float]]=mapped_column(Numeric(12,2))
+
+    seniority:Mapped[SeniorityLevel]=mapped_column(Enum(SeniorityLevel,name="seniority_level_enum"),default=SeniorityLevel.UNKNOWN,nullable=False)
