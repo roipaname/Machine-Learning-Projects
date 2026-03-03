@@ -4,6 +4,7 @@ from sqlalchemy import (
     )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postsegrl import JSON,UUID,ARRAY
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 import enum
 from datetime import datetime
 from loguru import logger
@@ -15,40 +16,33 @@ Base=declarative_base()
 # ENUM DEFINITIONS
 # =========================
 # Enums enforce valid values at BOTH app and DB level
-class Roles(enum.Enum):
-    admin="admin"
-    free_client="free_client"
-class prefix(enum.Enum):
-    mr="mr"
-    mrs="mrs"
-    dr="dr"
-    ms="ms"
-    honorable="honorable"
-class sexes(enum.Enum):
-    male="male"
-    female="female"
-    dr="dr"
-    ms="ms"
-    honorable="honorable"
 
-class Customer(Base):
-    __tablename__="customers"
-    customer_id=Column(UUID(as_uuid=True),primary_key=True,unique=True,default=uuid.uuid4)
-    first_name=Column(Text,nullable=True)
-    last_name=Column(Text,nullable=True)
-    prefix=Column(Enum(
-        prefix,name="prefix_enum"
-    ),nullable=True)
-    sexe=Column(Enum(
-        sexes,name="sex_enum"
-    ),nullable=True)
-    role=Column(Enum(
-        Roles,name="roles_enum"
-    ),nullable=False,default="free_client")
-    created_at=Column(DateTime,default=datetime.utcnow,nullable=False)
-    __table_args__=(
-        Index("idx_customers_role","role"),
-        Index("idx_customers_prefix","prefix"),
-        Index("idx_customers_fname","first_name"),
-        Index("idx_customers_lname","last_name")
-    )
+class JobSource(str, enum.Enum):
+    LINKEDIN = "linkedin"
+    INDEED   = "indeed"
+    GLASSDOOR = "glassdoor"
+    REMOTEOK  = "remoteok"
+    OTHER     = "other"
+class SeniorityLevel(str,enum.Enum):
+    INTERN     = "intern"
+    JUNIOR     = "junior"
+    MID        = "mid"
+    SENIOR     = "senior"
+    LEAD       = "lead"
+    PRINCIPAL  = "principal"
+    MANAGER    = "manager"
+    DIRECTOR   = "director"
+    VP         = "vp"
+    EXECUTIVE  = "executive"
+    UNKNOWN    = "unknown"
+
+class RemoteType(str, enum.Enum):
+    ON_SITE = "on_site"
+    HYBRID  = "hybrid"
+    REMOTE  = "remote"
+    UNKNOWN = "unknown"
+
+
+class TrendPeriod(str, enum.Enum):
+    WEEKLY  = "weekly"
+    MONTHLY = "monthly"
