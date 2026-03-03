@@ -1,47 +1,28 @@
 import os
-import sys
-from pathlib import Path
 from dotenv import load_dotenv
+from pathlib import Path
+from typing import Dict
 from loguru import logger
-from typing import Dict,List
-# Load environment variables from .env file
+
+#load environment variables
 load_dotenv()
-# ============================================================================
-# PROJECT PATHS
-# ============================================================================
 
-# Project root directory
+# Project root directory and Paths
 BASE_DIR=Path(__file__).resolve().parent.parent
-DATA_DIR=BASE_DIR / 'data'
-RAG_DIR=DATA_DIR /'rag_db'
-BUSINESS_STRATEGY_DOCS_DIR=DATA_DIR / 'business_strategy_docs'
-MODELS_DIR=BASE_DIR / 'models'
-LOGS_DIR=BASE_DIR  /' logs'
-CONFIG_DIR=BASE_DIR / 'config'
-DATA_RAW_DIR=DATA_DIR /'raw'
-DATA_PROCESSED_DIR=DATA_DIR /'processed'
-DATA_FEATURE_DIR=DATA_DIR /'feature store'
-KAGGLE_TRAIN_DATASET=DATA_DIR / 'raw/training.csv'
-KAGGLE_TEST_DATASET=DATA_DIR / 'raw/test.csv'
+DATA_DIR=BASE_DIR /'data'
+DATA_PROCESSED_DIR=DATA_DIR/'processed'
+DATA_RAW_DIR=DATA_DIR/'raw'
+LOGS_DIR=BASE_DIR /'logs'
+MODELS_DIR=BASE_DIR/'models'
+SCRIPTS_DIR=BASE_DIR/'scripts'
+CONFIG_DIR=BASE_DIR/'config'
+SCRAPER_DIR=BASE_DIR/'scraper'
 
-SRC_DIR = BASE_DIR / "src"
-MODEL_DIR = SRC_DIR / "ml_models"
-PROMPT_DIR = SRC_DIR / "prompt_engineering"
+for directory in [DATA_DIR,DATA_PROCESSED_DIR,DATA_RAW_DIR,LOGS_DIR,MODELS_DIR,SCRIPTS_DIR,CONFIG_DIR,SCRAPER_DIR]:
+    directory.mkdir(parents=True,exist_ok=True)
 
 
-NOTEBOOKS_DIR = BASE_DIR / "notebooks"
-TESTS_DIR = BASE_DIR / "tests"
-HF_TOKEN=os.getenv("HF_API_TOKEN")
-HF_MODEL="mistralai/Mistral-7B-Instruct-v0.2"
 
-for directory in [DATA_DIR, MODELS_DIR, LOGS_DIR,DATA_RAW_DIR,DATA_PROCESSED_DIR,DATA_FEATURE_DIR]:
-    directory.mkdir(parents=True, exist_ok=True)
-
-# ============================================================================
-# DATABASE SET UP
-# ============================================================================
-
-COLUMNS_TO_EXCLUDE=['customer_id', 'churned', 'churn_date']
 DB_NAME=os.getenv("DB_CHURN_NAME")
 
 if not DB_NAME:
@@ -58,42 +39,33 @@ DB_MAX_OVERFLOW = int(os.getenv('DB_MAX_OVERFLOW', '20'))
 DB_POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '30'))
 DB_ECHO = os.getenv('DB_ECHO', 'False').lower() == 'true'
 
+"""
+Classifier and AI advisor details
 
-# =========================================================
-# FEATURE STORE CONFIG
-# =========================================================
-
-FEATURE_STORE_CONFIG = {
-    "backend": "filesystem",  # later: feast, redis, s3
-    "path": DATA_FEATURE_DIR,
-    "versioning": True,
-    "entity_key": "customer_id",
-}
+"""
 
 
-# ============================================================================
-# MODEL CONFIGURATION
-# ============================================================================
+#Hugging Face Models
+HF_TOKEN=os.getenv("HF_API_TOKEN")
+HF_MODEL="mistralai/Mistral-7B-Instruct-v0.2"
 
-# Model types available
-AVAILABLE_CLASSIFIERS = [
-    'logistic_regression',
+
+AVAILABLE_CLASSIFIERS=[ 'logistic_regression',
     'naive_bayes',
     'svm',
-    'random_forest'
-]
+    'random_forest']
+
+
 # Model versioning
 MODEL_VERSION = os.getenv('MODEL_VERSION', 'v1.0.0')
 
 # Default classifier
-DEFAULT_CLASSIFIER = os.getenv('DEFAULT_CLASSIFIER', 'xgboost')
+DEFAULT_CLASSIFIER = os.getenv('DEFAULT_CLASSIFIERS', 'random_forest')
 
 # Training parameters
 TEST_SIZE = float(os.getenv('TEST_SIZE', '0.2'))
 RANDOM_STATE = int(os.getenv('RANDOM_STATE', '42'))
 CV_FOLDS = int(os.getenv('CV_FOLDS', '5'))
-
-
 
 
 # Minimum confidence threshold for classification
@@ -105,21 +77,6 @@ SIMILARITY_THRESHOLD = float(os.getenv('SIMILARITY_THRESHOLD', '0.85'))
 
 # Hash algorithm for content hashing
 HASH_ALGORITHM = os.getenv('HASH_ALGORITHM', 'sha256')
-
-# =========================================================
-# PROMPT ENGINEERING
-# =========================================================
-
-PROMPT_CONFIG = {
-    "prompt_version": "v1.0",
-    "templates_path": PROMPT_DIR / "templates",
-    "default_system_prompt": (
-        "You are a churn analysis assistant. "
-        "Explain predictions clearly and avoid speculation."
-    ),
-    "max_prompt_tokens": 2048,
-}
-
 
 
 # =========================================================
@@ -165,18 +122,6 @@ DECISION_POLICY = {
     }
 }
 
-# =========================================================
-# GOVERNANCE & MONITORING
-# =========================================================
-
-GOVERNANCE = {
-    "log_predictions": True,
-    "log_prompts": True,
-    "store_explanations": True,
-    "audit_path": BASE_DIR / "docs" / "audit_logs",
-    "pii_columns": ["email", "phone_number"],
-}
-
 # ============================================================================
 # LOGGING CONFIGURATION
 # ============================================================================
@@ -199,7 +144,6 @@ LOG_FORMAT = (
     "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
     "<level>{message}</level>"
 )
-
 
 
 # =========================================================

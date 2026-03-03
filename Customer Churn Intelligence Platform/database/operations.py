@@ -1,7 +1,7 @@
 from loguru import logger
 from database.connection import DatabaseConnection
 from database.schemas import Accounts,Customers,Subscriptions,UsageEvents,BillingInvoices,SupportTickets,SubscriptionStatus,Churn_Labels
-from typing import List,Dict,Optional
+from typing import List,Dict,Optional,Tuple
 from sqlalchemy import func, and_, not_
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -38,19 +38,41 @@ def check_if_account_exist(account_id:str):
         logger.error(f"failed to check if account with Id {account_id} exist")
         raise
 
-def get_accounts_by_company_name(company_name:str)->List[Accounts]:
+def get_accounts_by_company_name(
+    company_name: str,
+    page: int = 1,
+    page_size: int = 100
+):
     try:
         with db.get_db() as session:
+            offset = (page - 1) * page_size
 
-            if company_name:
-                results=session.query(Accounts).filter_by(
-                    company_name=company_name
-                ).all()
-                return results
+            rows = (
+                session.query(
+                    Accounts.account_id,
+                    Accounts.company_name,
+                    Customers.customer_id
+                )
+                .join(Customers, Customers.account_id == Accounts.account_id)
+                .filter(Accounts.company_name.ilike(f"%{company_name}%"))
+                .order_by(Accounts.created_at)
+                .limit(page_size)
+                .offset(offset)
+                .all()
+            )
+
+            return [
+                {
+                    "account_id": r.account_id,
+                    "company_name": r.company_name,
+                    "customer_id": r.customer_id,
+                }
+                for r in rows
+            ]
+
     except Exception as e:
-        logger.error(f"failed to check if account withs with company name {company_name} exist")
+        logger.error(f"Account lookup failed: {e}")
         raise
-    
 def update_account(account_id: str, updates: Dict) -> bool:
     try:
         with db.get_db() as session:
@@ -260,42 +282,59 @@ def get_churned_accounts():
     """
 
     with db.get_db() as session:
-        active_subq=(session.query(Subscriptions).filter(Subscriptions.status==SubscriptionStatus.active,Subscriptions.end_date>= datetime.utcnow()).subquery())
-        churned_accounts=(
-            session.query(Subscriptions.account_id,func.max(
-                Subscriptions.end_date).label("churn_date")).filter(
-                    not_(Subscriptions.account_id.in_(active_subq))
-                ).group_by(Subscriptions.account_id).all())
+        # Only select account_id for the subquery
+        active_subq = (
+            session.query(Subscriptions.account_id)
+            .filter(
+                Subscriptions.status == SubscriptionStatus.active,
+                Subscriptions.end_date >= datetime.utcnow()
+            )
+            .subquery()
+        )
+        
+        churned_accounts = (
+            session.query(
+                Subscriptions.account_id,
+                func.max(Subscriptions.end_date).label("churn_date")
+            )
+            .filter(not_(Subscriptions.account_id.in_(active_subq)))
+            .group_by(Subscriptions.account_id)
+            .all()
+        )
 
         return churned_accounts
-
 
 def generate_customer_churn_labels():
 
     with db.get_db() as session:
-        churned_accounts=get_churned_accounts()
+        churned_accounts = get_churned_accounts()
         if not churned_accounts:
-            logger.info("No Churned Accounst found.")
+            logger.info("No Churned Accounts found.")
             return
-        churned_account_map={
-            acc.account_id:acc.churn_date for acc in churned_accounts
+        
+        churned_account_map = {
+            acc.account_id: acc.churn_date for acc in churned_accounts
         }
-        customers=(
-            session.query(Customers).filter(Customers.account_id.in_(churned_account_map.keys())).all
-
+        
+        customers = (
+            session.query(Customers)
+            .filter(Customers.account_id.in_(churned_account_map.keys()))
+            .all()  # Added parentheses here
         )
 
+        inserted = 0  # Initialize counter
+        
         for customer in customers:
-            churn_date=churned_account_map[customer.account_id]
-            exists=(
-                session.query(
-                    Churn_Labels
-                ).filter(Churn_Labels.customer_id==customer.customer_id).first()
+            churn_date = churned_account_map[customer.account_id]
+            exists = (
+                session.query(Churn_Labels)
+                .filter(Churn_Labels.customer_id == customer.customer_id)
+                .first()
             )
             if exists:
                 continue
 
-            label=Churn_Labels(
+            label = Churn_Labels(
                 customer_id=customer.customer_id,
                 churned=True,
                 churn_date=churn_date,
@@ -304,7 +343,8 @@ def generate_customer_churn_labels():
 
             session.add(label)
             session.flush()
-            inserted+=1
+            inserted += 1
+            
         session.commit()
         logger.success(f"Inserted {inserted} churn labels.")
 

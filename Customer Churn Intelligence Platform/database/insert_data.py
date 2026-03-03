@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from config.settings import DATA_PROCESSED_DIR
 from loguru import logger
-from database.operations import insert_new_account,insert_customer,create_subscription,create_support_ticket,bulk_insert_usage_events,insert_invoice
+from database.operations import insert_new_account,insert_customer,create_subscription,create_support_ticket,bulk_insert_usage_events,insert_invoice,generate_customer_churn_labels
 
 DATA_PROCESSED_CSV=DATA_PROCESSED_DIR /'csv'
 accounts_path=DATA_PROCESSED_CSV/ 'accounts.csv'
@@ -21,6 +21,7 @@ def read_and_store_accounts(acc_path:Path):
 
     df=pd.read_csv(acc_path)
     print(df.info())
+    
     logger.info(f"inserting {len(df)} accouns into database")
 
     for idx,row in df.iterrows():
@@ -109,11 +110,14 @@ def read_and_store_invoices(invoice_path:Path):
             raise
     logger.success("Done inserting invoices") 
 
-#read_and_store_accounts(accounts_path)
+read_and_store_accounts(accounts_path)
 
-#read_and_store_cusomers(customer_path)
+read_and_store_cusomers(customer_path)
 
-#read_and_store_subs(subscription_path)
-#read_and_store_support(support_path)
-#read_and_store_usages(usage_path)
-#read_and_store_invoices(invoice_path)
+read_and_store_subs(subscription_path)
+read_and_store_support(support_path)
+read_and_store_usages(usage_path)
+read_and_store_invoices(invoice_path)
+
+
+print(generate_customer_churn_labels())

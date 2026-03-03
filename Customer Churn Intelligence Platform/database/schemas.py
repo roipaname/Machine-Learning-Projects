@@ -137,9 +137,11 @@ class UsageEvents(Base):
         EventType,name="event_type_enum"
     ),nullable=False, default="apicall")
     device_type=Column(Text,nullable=True, default="phone")
+    timestamp=Column(DateTime, nullable=False, default=datetime.utcnow)
     __table_args__=(
         Index("idx_usage_events_event_type","event_type"),
-        Index("idx_usage_events_device_type","device_type")
+        Index("idx_usage_events_device_type","device_type"),
+        Index("idx_usage_events_timestamp","timestamp")
     )
 # =========================
 # BILLING INVOICES TABLE
@@ -182,7 +184,7 @@ class SupportTickets(Base):
 class Churn_Labels(Base):
     __tablename__="churn_labels"
     churn_id=Column(UUID(as_uuid=True),primary_key=True,unique=True, default=uuid.uuid4)
-    customer_id=Column(UUID(as_uuid=True),ForeignKey("customer.customer_id",ondelete="CASCADE"),nullable=False)
+    customer_id=Column(UUID(as_uuid=True),ForeignKey("customers.customer_id",ondelete="CASCADE"),nullable=False)
     churned=Column(Boolean,default=False)
     churn_date=Column(DateTime, default=datetime.utcnow, nullable=False)
     churn_reason=Column(Text,nullable=True)

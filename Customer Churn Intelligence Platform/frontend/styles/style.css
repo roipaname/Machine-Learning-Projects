@@ -1,0 +1,487 @@
+/* =============================================================
+   ZiyaBank Design System — Global Stylesheet
+   Palette: Midnight Navy · Soft Charcoal · Pearl White
+   Accent:  Emerald Teal · Royal Amber · Muted Crimson
+   ============================================================= */
+
+/* ── Fonts ─────────────────────────────────────────────────── */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+/* ── Design Tokens ─────────────────────────────────────────── */
+:root {
+  --color-bg-primary: #0e1a2b; /* Midnight Navy  */
+  --color-bg-surface: #161f2e; /* Soft Charcoal  */
+  --color-text-primary: #f5f7fa; /* Pearl White    */
+  --color-text-muted: #8898aa; /* Muted Slate    */
+  --color-accent-teal: #2ed3b7; /* Emerald Teal   */
+  --color-accent-amber: #f2b705; /* Royal Amber    */
+  --color-accent-red: #d94a4a; /* Muted Crimson  */
+  --color-border: rgba(245, 247, 250, 0.07);
+  --color-teal-alpha-8: rgba(46, 211, 183, 0.08);
+  --color-teal-alpha-15: rgba(46, 211, 183, 0.15);
+  --color-teal-alpha-3: rgba(46, 211, 183, 0.03);
+  --color-amber-alpha-10: rgba(242, 183, 5, 0.1);
+  --color-amber-alpha-15: rgba(242, 183, 5, 0.15);
+  --color-red-alpha-15: rgba(217, 74, 74, 0.15);
+  --color-red-alpha-25: rgba(217, 74, 74, 0.25);
+  --color-red-alpha-40: rgba(217, 74, 74, 0.4);
+
+  --font-family-base: "IBM Plex Sans", sans-serif;
+  --font-family-mono: "IBM Plex Mono", monospace;
+
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 22px;
+  --font-size-2xl: 26px;
+  --font-size-3xl: 32px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-pill: 20px;
+
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.18s ease;
+  --transition-slow: 0.6s ease;
+
+  --shadow-card-hover:
+    0 0 0 1px var(--color-teal-alpha-15), 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Base Reset ────────────────────────────────────────────── */
+html,
+body,
+[class*="css"] {
+  font-family: var(--font-family-base) !important;
+  background-color: var(--color-bg-primary) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* ── Streamlit Chrome ──────────────────────────────────────── */
+#MainMenu,
+footer,
+header {
+  visibility: hidden;
+}
+
+.block-container {
+  padding: 1.5rem 2rem 3rem !important;
+  max-width: 1280px;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────── */
+section[data-testid="stSidebar"] {
+  background: var(--color-bg-surface) !important;
+  border-right: 1px solid var(--color-border) !important;
+}
+
+section[data-testid="stSidebar"] * {
+  color: var(--color-text-primary) !important;
+}
+
+/* ── Brand Bar ─────────────────────────────────────────────── */
+.brand-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 0 1.6rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 1.6rem;
+}
+
+.brand-bar__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-accent-teal);
+  box-shadow: 0 0 8px var(--color-accent-teal);
+  flex-shrink: 0;
+}
+
+.brand-bar__name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--color-text-primary);
+}
+
+.brand-bar__sub {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Form Inputs ───────────────────────────────────────────── */
+input[type="text"],
+.stTextInput input {
+  background: var(--color-bg-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--color-text-primary) !important;
+  font-family: var(--font-family-base) !important;
+  font-size: var(--font-size-md) !important;
+  padding: 10px 14px !important;
+  transition: border-color var(--transition-fast);
+}
+
+input[type="text"]:focus {
+  border-color: var(--color-accent-teal) !important;
+  outline: none;
+}
+
+/* ── Card Component ────────────────────────────────────────── */
+.ziya-card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 20px 22px;
+  position: relative;
+  overflow: hidden;
+  transition:
+    box-shadow var(--transition-normal),
+    transform var(--transition-normal);
+}
+
+.ziya-card:hover {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+.card__label {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.card__value {
+  font-size: var(--font-size-2xl);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  line-height: 1.1;
+}
+
+.card__sub {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-top: 6px;
+}
+
+/* ── Risk Badge Component ──────────────────────────────────── */
+.risk-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.risk-badge--low {
+  background: var(--color-teal-alpha-15);
+  color: var(--color-accent-teal);
+}
+
+.risk-badge--medium {
+  background: var(--color-amber-alpha-15);
+  color: var(--color-accent-amber);
+}
+
+.risk-badge--high {
+  background: var(--color-red-alpha-15);
+  color: var(--color-accent-red);
+}
+
+.risk-badge--critical {
+  background: var(--color-red-alpha-25);
+  color: #ff6b6b;
+  border: 1px solid var(--color-red-alpha-40);
+}
+
+/* ── Health Bar Component ──────────────────────────────────── */
+.health-bar {
+  margin: 4px 0 8px;
+}
+
+.health-bar__meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.health-bar__meta-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.health-bar__meta-value {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.health-bar__track {
+  height: 3px;
+  background: rgba(245, 247, 250, 0.1);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.health-bar__fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  transition: width var(--transition-slow);
+}
+
+/* ── AI Advisor Panel ──────────────────────────────────────── */
+.advisor-panel {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.advisor-panel__header {
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.advisor-panel__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent-teal);
+  animation: pulse 2s infinite;
+  flex-shrink: 0;
+}
+
+.advisor-panel__title {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-text-primary);
+}
+
+.advisor-panel__subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-left: auto;
+}
+
+.advisor-panel__body-wrap {
+  padding: 0 22px 22px;
+}
+
+.advisor-panel__body {
+  padding: 22px;
+  border-left: 2px solid var(--color-accent-teal);
+  margin-top: 16px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--color-teal-alpha-3);
+}
+
+.advisor-panel__body p,
+.advisor-panel__body li {
+  font-size: var(--font-size-md);
+  line-height: 1.75;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.advisor-panel__body ol {
+  padding-left: 1.1em;
+  margin: 0;
+}
+
+.advisor-panel__body li {
+  margin-bottom: 8px;
+}
+
+/* ── Driver Chips ──────────────────────────────────────────── */
+.driver-chip {
+  display: inline-block;
+  background: var(--color-amber-alpha-10);
+  color: var(--color-accent-amber);
+  border: 1px solid rgba(242, 183, 5, 0.2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  padding: 3px 9px;
+  margin: 3px 3px 3px 0;
+  font-weight: 500;
+}
+
+/* ── Account Row ───────────────────────────────────────────── */
+.account-row {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.account-row:hover {
+  border-color: rgba(46, 211, 183, 0.25);
+  box-shadow: 0 0 0 1px var(--color-teal-alpha-8);
+}
+
+.account-row__name {
+  font-weight: 600;
+  font-size: var(--font-size-md);
+}
+
+.account-row__meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-top: 3px;
+}
+
+/* ── Signal Table ──────────────────────────────────────────── */
+.signal-table {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 4px 16px;
+}
+
+.signal-table__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-base);
+}
+
+.signal-table__row:last-child {
+  border-bottom: none;
+}
+
+.signal-table__key {
+  color: var(--color-text-muted);
+}
+
+.signal-table__value {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+/* ── Section Title ─────────────────────────────────────────── */
+.section-title {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: 24px 0 12px;
+}
+
+/* ── Empty State ───────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-text-muted);
+}
+
+.empty-state__icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.empty-state p {
+  font-size: var(--font-size-md);
+  line-height: 1.6;
+}
+
+/* ── Thinking / Loading State ──────────────────────────────── */
+.thinking-line {
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-accent-teal),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+}
+
+.thinking-text {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* ── Buttons ───────────────────────────────────────────────── */
+.stButton > button {
+  background: transparent !important;
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+  border-radius: var(--radius-md) !important;
+  font-family: var(--font-family-base) !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 500 !important;
+  padding: 8px 16px !important;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast) !important;
+}
+
+.stButton > button:hover {
+  border-color: var(--color-accent-teal) !important;
+  background: var(--color-teal-alpha-8) !important;
+  color: var(--color-accent-teal) !important;
+}
+
+/* Primary button variant via wrapper div */
+.btn--primary .stButton > button {
+  background: var(--color-accent-teal) !important;
+  border-color: var(--color-accent-teal) !important;
+  color: var(--color-bg-primary) !important;
+  font-weight: 600 !important;
+}
+
+.btn--primary .stButton > button:hover {
+  background: #26bfa6 !important;
+  border-color: #26bfa6 !important;
+  color: var(--color-bg-primary) !important;
+}
+
+/* ── Animations ────────────────────────────────────────────── */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(46, 211, 183, 0.4);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 0 5px rgba(46, 211, 183, 0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
