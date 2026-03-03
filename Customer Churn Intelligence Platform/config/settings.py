@@ -13,8 +13,6 @@ load_dotenv()
 # Project root directory
 BASE_DIR=Path(__file__).resolve().parent.parent
 DATA_DIR=BASE_DIR / 'data'
-RAG_DIR=DATA_DIR /'rag_db'
-BUSINESS_STRATEGY_DOCS_DIR=DATA_DIR / 'business_strategy_docs'
 MODELS_DIR=BASE_DIR / 'models'
 LOGS_DIR=BASE_DIR  /' logs'
 CONFIG_DIR=BASE_DIR / 'config'
@@ -27,12 +25,11 @@ KAGGLE_TEST_DATASET=DATA_DIR / 'raw/test.csv'
 SRC_DIR = BASE_DIR / "src"
 MODEL_DIR = SRC_DIR / "ml_models"
 PROMPT_DIR = SRC_DIR / "prompt_engineering"
-
+RAG_DIR = SRC_DIR / "rag"
 
 NOTEBOOKS_DIR = BASE_DIR / "notebooks"
 TESTS_DIR = BASE_DIR / "tests"
-HF_TOKEN=os.getenv("HF_API_TOKEN")
-HF_MODEL="mistralai/Mistral-7B-Instruct-v0.2"
+
 
 for directory in [DATA_DIR, MODELS_DIR, LOGS_DIR,DATA_RAW_DIR,DATA_PROCESSED_DIR,DATA_FEATURE_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
@@ -41,7 +38,7 @@ for directory in [DATA_DIR, MODELS_DIR, LOGS_DIR,DATA_RAW_DIR,DATA_PROCESSED_DIR
 # DATABASE SET UP
 # ============================================================================
 
-COLUMNS_TO_EXCLUDE=['customer_id', 'churned', 'churn_date']
+
 DB_NAME=os.getenv("DB_CHURN_NAME")
 
 if not DB_NAME:
