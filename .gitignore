@@ -283,3 +283,20 @@ htmlcov/
 *.gguf.lock
 *.gguf.metadata
 *.gguf
+
+# Data
+data/
+*.parquet
+*.bin
+
+# Models
+models/
+*.json
+*.png
+
+# Vector DB
+rag_db/
+
+# Local configs
+*.lock
+*.save
