@@ -83,6 +83,7 @@ class Company(Base):
     )
 
 class JobPosting(Base):
+#Attempting new style
     __tablename__="job_postings"
     posting_id=Column(UUID(as_uuid=True),primary_key=True,nullable=False,default=uuid.uuid4)
      # Content
