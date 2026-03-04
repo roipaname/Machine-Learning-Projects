@@ -103,3 +103,4 @@ class JobPosting(Base):
     salary_max: Mapped[Optional[float]]=mapped_column(Numeric(12,2))
 
     seniority:Mapped[SeniorityLevel]=mapped_column(Enum(SeniorityLevel,name="seniority_level_enum"),default=SeniorityLevel.UNKNOWN,nullable=False)
+    trend_period:Mapped[Optional[TrendPeriod]]=mapped_column(Enum(TrendPeriod,name="Trend_period_enum"),nullable=True)
