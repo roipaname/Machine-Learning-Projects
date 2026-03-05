@@ -68,7 +68,7 @@ class Company(Base):
 
     __tablename__ = "companies"
 
-    company_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    company_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     name:             Mapped[str]           = mapped_column(String(255), nullable=False)
     normalized_name:  Mapped[str]           = mapped_column(String(255), nullable=False, index=True)
@@ -96,7 +96,7 @@ class Company(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Company id={self.id} name={self.name!r}>"
+        return f"<Company id={self.company_id} name={self.name!r}>"
 
 # ---------------------------------------------------------------------------
 # job_postings
@@ -107,7 +107,7 @@ class JobPosting(Base):
 
     __tablename__ = "job_postings"
 
-    job_posting_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    job_posting_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Content
     title:       Mapped[str]           = mapped_column(String(512), nullable=False)
@@ -158,8 +158,8 @@ class JobPosting(Base):
                 )
 
     # FK
-    company_id: Mapped[Optional[int]] = mapped_column(
-        BigInteger, ForeignKey("companies.id", ondelete="SET NULL"), nullable=True
+    company_id: Mapped[Optional[UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("companies.company_id", ondelete="SET NULL"), nullable=True
     )
 
     # Relationships
@@ -178,7 +178,7 @@ class JobPosting(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<JobPosting id={self.id} title={self.title!r} source={self.source}>"
+        return f"<JobPosting id={self.job_posting_id} title={self.title!r} source={self.source}>"
 # ---------------------------------------------------------------------------
 # skill_categories
 # ---------------------------------------------------------------------------
@@ -187,3 +187,10 @@ class SkillCategory(Base):
     """Taxonomy node for grouping skills (e.g. Programming, Cloud, Soft Skills)."""
 
     __tablename__ = "skill_categories"
+    skill_category_id:Mapped[UUID]=mapped_column(UUID(as_uuid=True),default=uuid.uuid4,primary_key=True)
+    name:Mapped[str]=mapped_column(String(128),nullable=False,unique=True)
+    slug:        Mapped[str]           = mapped_column(String(128), nullable=False, unique=True)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    parent_id:Mapped[Optional[UUID]]=mapped_column(
+        UUID(as_uuid=True),ForeignKey("skill_categories.skill_category_id", ondelete="SET NULL"), nullable=True
+    )
