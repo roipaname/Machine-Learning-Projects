@@ -64,43 +64,126 @@ class CompanySize(str, enum.Enum):
     UNKNOWN     = "unknown"
 
 class Company(Base):
-    __tablename__="company"
-    company_id=Column(UUID(as_uuid=True),primary_key=True,nullable=False,default=uuid.uuid4)
-    company_name=Column(Text,nullable=False)
-    normalized_name=Column(Text,nullable=False)
-    industry=Column(Text,nullable=True)
-    company_size=Column(Enum(
-        CompanySize,name="company_size_enum"
-    ),nullable=False)
-    hq_location=Column(Text,nullable=True)
-    linkedin_url=Column(Text,nullable=True)
-    created_at=Column(DateTime,default=datetime.utcnow,nullable=False)
-    updated_at=Column(DateTime,default=datetime.utcnow,nullable=False)
-    job_postings: Mapped[List["JobPosting"]] = relationship(
-        "JobPosting",
-        back_populates="company",
-        cascade="all, delete-orphan"
+    """Normalized employer / company data."""
+
+    __tablename__ = "companies"
+
+    company_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+
+    name:             Mapped[str]           = mapped_column(String(255), nullable=False)
+    normalized_name:  Mapped[str]           = mapped_column(String(255), nullable=False, index=True)
+    website:          Mapped[Optional[str]] = mapped_column(String(512))
+    industry:         Mapped[Optional[str]] = mapped_column(String(128))
+    size:             Mapped[CompanySize]   = mapped_column(
+                          Enum(CompanySize, name="company_size_enum"),
+                          default=CompanySize.UNKNOWN,
+                          nullable=False,
+                      )
+    hq_location:      Mapped[Optional[str]] = mapped_column(String(255))
+    linkedin_url:     Mapped[Optional[str]] = mapped_column(String(512))
+
+    # Metadata
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
+    # Relationships
+    job_postings: Mapped[List["JobPosting"]] = relationship(back_populates="company")
+
+    __table_args__ = (
+        UniqueConstraint("normalized_name", name="uq_companies_normalized_name"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<Company id={self.id} name={self.name!r}>"
+
+# ---------------------------------------------------------------------------
+# job_postings
+# ---------------------------------------------------------------------------
+
 class JobPosting(Base):
-#Attempting new style
-    __tablename__="job_postings"
-    posting_id=Column(UUID(as_uuid=True),primary_key=True,nullable=False,default=uuid.uuid4)
-     # Content
+    """Core scraped job entity."""
+
+    __tablename__ = "job_postings"
+
+    job_posting_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+
+    # Content
     title:       Mapped[str]           = mapped_column(String(512), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     url:         Mapped[str]           = mapped_column(String(1024), nullable=False)
 
     # Location & remote
+    location:    Mapped[Optional[str]] = mapped_column(String(255))
     remote_type: Mapped[RemoteType]    = mapped_column(
                      Enum(RemoteType, name="remote_type_enum"),
                      default=RemoteType.UNKNOWN,
                      nullable=False,
                  )
 
-    #Compensations
-    salary_min: Mapped[Optional[float]]=mapped_column(Numeric(12,2))
-    salary_max: Mapped[Optional[float]]=mapped_column(Numeric(12,2))
+    # Compensation
+    salary_min:      Mapped[Optional[float]] = mapped_column(Numeric(12, 2))
+    salary_max:      Mapped[Optional[float]] = mapped_column(Numeric(12, 2))
+    salary_currency: Mapped[Optional[str]]   = mapped_column(String(8))
 
-    seniority:Mapped[SeniorityLevel]=mapped_column(Enum(SeniorityLevel,name="seniority_level_enum"),default=SeniorityLevel.UNKNOWN,nullable=False)
-    trend_period:Mapped[Optional[TrendPeriod]]=mapped_column(Enum(TrendPeriod,name="Trend_period_enum"),nullable=True)
+    # Seniority (NLP-derived or parsed)
+    seniority: Mapped[SeniorityLevel] = mapped_column(
+                   Enum(SeniorityLevel, name="seniority_level_enum"),
+                   default=SeniorityLevel.UNKNOWN,
+                   nullable=False,
+               )
+
+    # Source & scraping metadata
+    source:     Mapped[JobSource] = mapped_column(
+                    Enum(JobSource, name="job_source_enum"),
+                    nullable=False,
+                )
+    external_id: Mapped[Optional[str]] = mapped_column(String(255))   # ID on source platform
+    scrape_run_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("scrape_runs.id", ondelete="SET NULL"), nullable=True
+    )
+
+    # Flags
+    is_active:   Mapped[bool] = mapped_column(Boolean, default=True,  nullable=False)
+    is_processed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # NLP done?
+
+    # Timestamps
+    posted_at:  Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    scraped_at: Mapped[datetime]            = mapped_column(
+                    DateTime(timezone=True), server_default=func.now()
+                )
+    updated_at: Mapped[datetime]            = mapped_column(
+                    DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+                )
+
+    # FK
+    company_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("companies.id", ondelete="SET NULL"), nullable=True
+    )
+
+    # Relationships
+    company:     Mapped[Optional["Company"]]       = relationship(back_populates="job_postings")
+    job_skills:  Mapped[List["JobSkill"]]           = relationship(back_populates="job_posting", cascade="all, delete-orphan")
+    categories:  Mapped[List["JobCategory"]]        = relationship(back_populates="job_posting", cascade="all, delete-orphan")
+    scrape_run:  Mapped[Optional["ScrapeRun"]]      = relationship(back_populates="job_postings")
+
+    __table_args__ = (
+        UniqueConstraint("source", "external_id", name="uq_job_postings_source_external"),
+        Index("ix_job_postings_posted_at",  "posted_at"),
+        Index("ix_job_postings_scraped_at", "scraped_at"),
+        Index("ix_job_postings_source",     "source", "scraped_at"),
+        Index("ix_job_postings_company",    "company_id"),
+        Index("ix_job_postings_seniority",  "seniority"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<JobPosting id={self.id} title={self.title!r} source={self.source}>"
+# ---------------------------------------------------------------------------
+# skill_categories
+# ---------------------------------------------------------------------------
+
+class SkillCategory(Base):
+    """Taxonomy node for grouping skills (e.g. Programming, Cloud, Soft Skills)."""
+
+    __tablename__ = "skill_categories"
