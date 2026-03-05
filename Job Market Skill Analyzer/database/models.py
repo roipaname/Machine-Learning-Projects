@@ -3,7 +3,7 @@ from sqlalchemy import (
     Numeric,String,UniqueConstraint,func,BigInteger
     )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import JSON,UUID,ARRAY
+from sqlalchemy.dialects.postgresql import JSON,UUID,ARRAY,JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 import enum
 from datetime import datetime
@@ -194,3 +194,64 @@ class SkillCategory(Base):
     parent_id:Mapped[Optional[UUID]]=mapped_column(
         UUID(as_uuid=True),ForeignKey("skill_categories.skill_category_id", ondelete="SET NULL"), nullable=True
     )
+
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    # Self-referential relationship for nested categories
+    parent:   Mapped[Optional["SkillCategory"]]  = relationship("SkillCategory", remote_side="SkillCategory.id", back_populates="children")
+    children: Mapped[List["SkillCategory"]]       = relationship("SkillCategory", back_populates="parent")
+    skills:   Mapped[List["Skill"]]               = relationship(back_populates="category")
+
+    def __repr__(self) -> str:
+        return f"<SkillCategory id={self.skill_category_id} name={self.name!r}>"
+    
+# ---------------------------------------------------------------------------
+# skills
+# ---------------------------------------------------------------------------
+
+class Skill(Base):
+    """Master skill registry — canonical source of truth."""
+
+    __tablename__ = "skills"
+    skill_id:        Mapped[UUID]=mapped_column(UUID(as_uuid=True),default=uuid.uuid4,primary_key=True)
+    name:            Mapped[str]           = mapped_column(String(255), nullable=False)
+    normalized_name: Mapped[str]           = mapped_column(String(255), nullable=False)
+    slug:            Mapped[str]           = mapped_column(String(255), nullable=False, unique=True)
+    description:     Mapped[Optional[str]] = mapped_column(Text)
+
+    # Taxonomy
+    category_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("skill_categories.skill_category_id", ondelete="SET NULL"), nullable=True
+    )
+
+    # Quality flags
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_active:   Mapped[bool] = mapped_column(Boolean, default=True,  nullable=False)
+
+    # Optional structured metadata (e.g. {"type": "language", "paradigm": "OOP"})
+    metadata: Mapped[Optional[dict]] = mapped_column(JSONB)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    # Relationships
+    category:      Mapped[Optional["SkillCategory"]] = relationship(back_populates="skills")
+    aliases:       Mapped[List["SkillAlias"]]         = relationship(back_populates="skill", cascade="all, delete-orphan")
+    job_skills:    Mapped[List["JobSkill"]]           = relationship(back_populates="skill")
+    skill_trends:  Mapped[List["SkillTrend"]]         = relationship(back_populates="skill", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        UniqueConstraint("normalized_name", name="uq_skills_normalized_name"),
+        Index("ix_skills_category", "category_id"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<Skill id={self.skill_id} name={self.name!r}>"
+
+
+# ---------------------------------------------------------------------------
+# skill_aliases
+# ---------------------------------------------------------------------------
