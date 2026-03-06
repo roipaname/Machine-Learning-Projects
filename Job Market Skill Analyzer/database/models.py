@@ -210,7 +210,7 @@ class SkillCategory(Base):
 # ---------------------------------------------------------------------------
 
 class Skill(Base):
-    """Master skill registry — canonical source of truth."""
+    """Master skill registry — canonical source of truth. """
 
     __tablename__ = "skills"
     skill_id:        Mapped[UUID]=mapped_column(UUID(as_uuid=True),default=uuid.uuid4,primary_key=True)
