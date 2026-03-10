@@ -304,3 +304,203 @@ class JobSkill(Base):
     skill_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("skills.skill_id", ondelete="CASCADE"), nullable=False
     )
+    # NLP extraction data
+    frequency_mentioned: Mapped[int]           = mapped_column(Integer, default=1, nullable=False)
+    context_snippet:     Mapped[Optional[str]] = mapped_column(Text)          # sentence(s) where skill appeared
+    confidence_score:    Mapped[Optional[float]] = mapped_column(Float)       # NLP confidence 0.0–1.0
+    is_required:         Mapped[Optional[bool]]  = mapped_column(Boolean)     # required vs. nice-to-have
+    extraction_method:   Mapped[Optional[str]]   = mapped_column(String(64))  # "regex" | "ner" | "llm"
+
+    # Relationships
+    job_posting: Mapped["JobPosting"] = relationship(back_populates="job_skills")
+    skill:       Mapped["Skill"]      = relationship(back_populates="job_skills")
+
+    __table_args__ = (
+        UniqueConstraint("job_posting_id", "skill_id", name="uq_job_skills_posting_skill"),
+        Index("ix_job_skills_skill_id",       "skill_id"),
+        Index("ix_job_skills_job_posting_id", "job_posting_id"),
+        Index("ix_job_skills_confidence",     "confidence_score"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<JobSkill job={self.job_posting_id} skill={self.skill_id} freq={self.frequency_mentioned}>"
+# ---------------------------------------------------------------------------
+ #job_categories
+# ---------------------------------------------------------------------------
+
+class JobCategory(Base):
+    """
+    Categorical tags attached to a job posting.
+    Covers seniority, domain (backend / ML / devops …), and remote type.
+    """
+
+    __tablename__ = "job_categories"
+
+    job_cat_id: Mapped[UUID]=mapped_column(UUID(as_uuid=True),primary_key=True,default=uuid.uuid4)
+
+    job_posting_id:Mapped[UUID]=mapped_column(
+        UUID(as_uuid=True),ForeignKey("job_postings.job_posting_id",ondelete="CASCADE"),nullable=False
+    )
+
+    # Tag type + value stored as flexible string pairs
+    tag_type:  Mapped[str] = mapped_column(String(64),  nullable=False)   # "domain" | "seniority" | "remote"
+    tag_value: Mapped[str] = mapped_column(String(128), nullable=False)
+    source:    Mapped[Optional[str]] = mapped_column(String(64))          # "nlp" | "manual" | "scraped"
+
+    # Relationship
+    job_posting: Mapped["JobPosting"] = relationship(back_populates="categories")
+
+    __table_args__ = (
+        UniqueConstraint("job_posting_id", "tag_type", "tag_value", name="uq_job_categories"),
+        Index("ix_job_categories_tag_type",  "tag_type",  "tag_value"),
+        Index("ix_job_categories_posting_id", "job_posting_id"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<JobCategory job={self.job_posting_id} {self.tag_type}={self.tag_value!r}>"
+
+
+# ---------------------------------------------------------------------------
+# skill_trends
+# ---------------------------------------------------------------------------
+
+class SkillTrend(Base):
+    """
+    Pre-aggregated time-series analytics per skill.
+    Populated by the scheduler, NOT computed on-the-fly.
+    """
+
+    __tablename__ = "skill_trends"
+
+    skill_trend_id: Mapped[UUID]=mapped_column(UUID(as_uuid=True),primary_key=True,default=uuid.uuid4)
+
+    skill_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("skills.skill_id", ondelete="CASCADE"), nullable=False
+    )
+
+    period:       Mapped[TrendPeriod] = mapped_column(
+                      Enum(TrendPeriod, name="trend_period_enum"), nullable=False
+                  )
+    period_start: Mapped[datetime]    = mapped_column(DateTime(timezone=True), nullable=False)
+    period_end:   Mapped[datetime]    = mapped_column(DateTime(timezone=True), nullable=False)
+
+    # Demand metrics
+    job_count:     Mapped[int]            = mapped_column(Integer,  default=0, nullable=False)
+    demand_score:  Mapped[Optional[float]] = mapped_column(Float)   # normalised 0–100
+    growth_rate:   Mapped[Optional[float]] = mapped_column(Float)   # % change vs previous period
+
+    # Compensation signals
+    avg_salary_min: Mapped[Optional[float]] = mapped_column(Numeric(12, 2))
+    avg_salary_max: Mapped[Optional[float]] = mapped_column(Numeric(12, 2))
+
+    # Co-occurrence (top skills mentioned alongside this one)
+    co_occurring_skills: Mapped[Optional[list]] = mapped_column(ARRAY(UUID))   # skill IDs
+
+    # Top companies hiring for this skill this period
+    top_companies: Mapped[Optional[list]] = mapped_column(ARRAY(UUID))         # company IDs
+
+    # Geographic distribution  {"US": 400, "UK": 120, ...}
+    geo_distribution: Mapped[Optional[dict]] = mapped_column(JSONB)
+
+    computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationship
+    skill: Mapped["Skill"] = relationship(back_populates="skill_trends")
+
+    __table_args__ = (
+        UniqueConstraint("skill_id", "period", "period_start", name="uq_skill_trends_skill_period"),
+        Index("ix_skill_trends_period",      "skill_id", "period"),
+        Index("ix_skill_trends_period_start", "period_start"),
+        Index("ix_skill_trends_demand",       "demand_score"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<SkillTrend skill={self.skill_id} period={self.period} "
+            f"start={self.period_start.date()} jobs={self.job_count}>"
+        )
+
+
+# ---------------------------------------------------------------------------
+# scrape_runs
+# ---------------------------------------------------------------------------
+
+class ScrapeRun(Base):
+    """Audit log for every scraper execution."""
+
+    __tablename__ = "scrape_runs"
+
+    id: Mapped[UUID]=mapped_column(UUID(as_uuid=True),primary_key=True,default=uuid.uuid4)
+
+    source:  Mapped[JobSource]   = mapped_column(
+                 Enum(JobSource, name="scrape_source_enum"), nullable=False
+             )
+    status:  Mapped[ScrapeStatus] = mapped_column(
+                 Enum(ScrapeStatus, name="scrape_status_enum"),
+                 default=ScrapeStatus.RUNNING,
+                 nullable=False,
+             )
+
+    # Config snapshot used for this run
+    config: Mapped[Optional[dict]] = mapped_column(JSONB)  # {"keywords": [...], "location": "..."}
+
+    # Counters
+    jobs_found:   Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    jobs_new:     Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    jobs_updated: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    jobs_skipped: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    # Error handling
+    error_log:    Mapped[Optional[str]] = mapped_column(Text)
+    error_count:  Mapped[int]           = mapped_column(Integer, default=0, nullable=False)
+
+    # Timing
+    started_at:  Mapped[datetime]           = mapped_column(DateTime(timezone=True), server_default=func.now())
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+    # Relationships
+    job_postings: Mapped[List["JobPosting"]] = relationship(back_populates="scrape_run")
+
+    __table_args__ = (
+        Index("ix_scrape_runs_source",     "source", "started_at"),
+        Index("ix_scrape_runs_status",     "status"),
+        Index("ix_scrape_runs_started_at", "started_at"),
+    )
+
+    @property
+    def duration_seconds(self) -> Optional[float]:
+        if self.finished_at and self.started_at:
+            return (self.finished_at - self.started_at).total_seconds()
+        return None
+
+    def __repr__(self) -> str:
+        return (
+            f"<ScrapeRun id={self.id} source={self.source} "
+            f"status={self.status} jobs_new={self.jobs_new}>"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Convenience: expose all models for Alembic autogenerate
+# ---------------------------------------------------------------------------
+
+__all__ = [
+    "Base",
+    # Enums
+    "JobSource",
+    "SeniorityLevel",
+    "RemoteType",
+    "TrendPeriod",
+    "ScrapeStatus",
+    "CompanySize",
+    # Models
+    "Company",
+    "JobPosting",
+    "SkillCategory",
+    "Skill",
+    "SkillAlias",
+    "JobSkill",
+    "JobCategory",
+    "SkillTrend",
+    "ScrapeRun",
+]
