@@ -258,3 +258,29 @@ class Skill(Base):
 # ---------------------------------------------------------------------------
 # skill_aliases
 # ---------------------------------------------------------------------------
+
+
+class SkillAlias(Base):
+    """
+    Alternate names / abbreviations for a skill.
+    e.g.  JS → JavaScript,  ML → Machine Learning,  k8s → Kubernetes
+    """
+
+    __tablename__ = "skill_aliases"
+    skill_alias_id:Mapped[UUID]=mapped_column(UUID(as_uuid=True),primary_key=True,default=uuid.uuid4)
+
+    alias: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    skill_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("skills.skill_id", ondelete="CASCADE"), nullable=False
+    )
+
+    skill: Mapped["Skill"] = relationship(back_populates="aliases")
+
+    __table_args__ = (
+        UniqueConstraint("alias", name="uq_skill_aliases_alias"),
+        Index("ix_skill_aliases_skill_id", "skill_id"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<SkillAlias alias={self.alias!r} → skill_id={self.skill_id}>"
