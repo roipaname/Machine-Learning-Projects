@@ -271,8 +271,8 @@ class SkillAlias(Base):
 
     alias: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    skill_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("skills.skill_id", ondelete="CASCADE"), nullable=False
+    skill_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("skills.skill_id", ondelete="CASCADE"), nullable=False
     )
 
     skill: Mapped["Skill"] = relationship(back_populates="aliases")
@@ -284,3 +284,23 @@ class SkillAlias(Base):
 
     def __repr__(self) -> str:
         return f"<SkillAlias alias={self.alias!r} → skill_id={self.skill_id}>"
+
+# ---------------------------------------------------------------------------
+# job_skills  (many-to-many: job_postings ↔ skills)
+# ---------------------------------------------------------------------------
+
+class JobSkill(Base):
+    """
+    Junction table linking job postings to extracted skills.
+    Stores NLP extraction context for downstream analytics.
+    """
+
+    __tablename__ = "job_skills"
+
+    job_skill_id:Mapped[UUID]=mapped_column(UUID(as_uuid=True),primary_key=True,default=uuid.uuid4)
+    job_posting_id:Mapped[UUID]=mapped_column(
+        UUID(as_uuid=True),ForeignKey("job_postings.job_posting_id",ondelete="CASCADE"),nullable=False
+    )
+    skill_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("skills.skill_id", ondelete="CASCADE"), nullable=False
+    )
