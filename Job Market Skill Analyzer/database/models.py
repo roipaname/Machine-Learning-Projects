@@ -427,6 +427,7 @@ class SkillTrend(Base):
 
 class ScrapeRun(Base):
     """Audit log for every scraper execution."""
+    
 
     __tablename__ = "scrape_runs"
 
