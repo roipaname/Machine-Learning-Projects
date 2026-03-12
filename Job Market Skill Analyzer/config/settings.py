@@ -23,7 +23,7 @@ for directory in [DATA_DIR,DATA_PROCESSED_DIR,DATA_RAW_DIR,LOGS_DIR,MODELS_DIR,S
 
 
 
-DB_NAME=os.getenv("DB_CHURN_NAME")
+DB_NAME=os.getenv("DB_CHURN_NAMEs","job_skill_analysis")
 
 if not DB_NAME:
     logger.error("DB_NAME not set")
@@ -38,7 +38,9 @@ DB_POOL_SIZE = int(os.getenv('DB_POOL_SIZE', '10'))
 DB_MAX_OVERFLOW = int(os.getenv('DB_MAX_OVERFLOW', '20'))
 DB_POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '30'))
 DB_ECHO = os.getenv('DB_ECHO', 'False').lower() == 'true'
+APP_ENV="testing"
 
+SQLALCHEMY_URL="postgresql://roipaname:password@localhost:5432/job_skill_analysis"
 """
 Classifier and AI advisor details
 

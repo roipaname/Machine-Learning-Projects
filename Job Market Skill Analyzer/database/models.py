@@ -426,6 +426,7 @@ class SkillTrend(Base):
 # ---------------------------------------------------------------------------
 
 class ScrapeRun(Base):
+    
     """Audit log for every scraper execution."""
     
 
