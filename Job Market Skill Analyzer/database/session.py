@@ -103,3 +103,27 @@ async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
         finally:
             await session.close()
  
+# ---------------------------------------------------------------------------
+# Lifecycle helpers (call from FastAPI lifespan or main.py)
+# ---------------------------------------------------------------------------
+ 
+async def init_db() -> None:
+    """
+    Verify the database connection on startup.
+    Does NOT create tables — use Alembic migrations for that.
+    """
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(lambda c: c.execute(
+                __import__("sqlalchemy").text("SELECT 1")
+            ))
+        logger.success("✅  Database connection verified — %s", settings.DATABASE_URL)
+    except Exception as exc:
+        logger.error("❌  Cannot connect to database: %s", exc)
+        raise
+ 
+ 
+async def close_db() -> None:
+    """Dispose the engine connection pool (call on app shutdown)."""
+    await engine.dispose()
+    logger.info("Database engine disposed.")
