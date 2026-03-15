@@ -40,7 +40,7 @@ DB_POOL_TIMEOUT = int(os.getenv('DB_POOL_TIMEOUT', '30'))
 DB_ECHO = os.getenv('DB_ECHO', 'False').lower() == 'true'
 APP_ENV="testing"
 
-SQLALCHEMY_URL="postgresql://roipaname:password@localhost:5432/job_skill_analysis"
+SQLALCHEMY_URL="postgresql+psycopg2://roipaname:password@localhost:5432/job_skill_analysis"
 """
 Classifier and AI advisor details
 
