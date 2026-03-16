@@ -118,7 +118,7 @@ async def init_db() -> None:
             await conn.run_sync(lambda c: c.execute(
                 __import__("sqlalchemy").text("SELECT 1")
             ))
-        logger.success("✅  Database connection verified — %s", settings.DATABASE_URL)
+        logger.success("✅  Database connection verified — %s", SQLALCHEMY_URL)
     except Exception as exc:
         logger.error("❌  Cannot connect to database: %s", exc)
         raise
