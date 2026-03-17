@@ -53,5 +53,5 @@ required-environments = [
 
 [tool.uv.workspace]
 members = [
-    "Job Market Skill Analyzer",
+    "Machine Learning Projects",
 ]
