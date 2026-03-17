@@ -1,3 +1,4 @@
+from __future__ import annotations
 from config.settings import (
     DB_NAME,DB_HOST,
     DB_PASSWORD,DB_PORT,DB_USER,
@@ -6,7 +7,7 @@ from config.settings import (
     SQLALCHEMY_URL
 )
 from sqlalchemy.pool import NullPool
-from __future__ import annotations
+
 from loguru import logger
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator

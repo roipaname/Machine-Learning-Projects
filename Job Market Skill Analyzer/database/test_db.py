@@ -1,7 +1,7 @@
 # test_db.py
 import asyncio
 from sqlalchemy import text
-from src.database.session import init_db, get_db_context, close_db
+from database.session import init_db, get_db_context, close_db
 
 async def main():
     await init_db()  # verifies connection
