@@ -12,7 +12,7 @@ from loguru import logger
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from slqalchemy.ext.asyncio import (
+from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
@@ -130,3 +130,4 @@ async def close_db() -> None:
     """Dispose the engine connection pool (call on app shutdown)."""
     await engine.dispose()
     logger.info("Database engine disposed.")
+    
