@@ -127,6 +127,7 @@ async def init_db() -> None:
  
  
 async def close_db() -> None:
+    
     """Dispose the engine connection pool (call on app shutdown)."""
     await engine.dispose()
     logger.info("Database engine disposed.")
