@@ -122,7 +122,7 @@ async def init_db() -> None:
             ))
         logger.success("✅  Database connection verified — %s", SQLALCHEMY_URL)
     except Exception as exc:
-        logger.error("❌  Cannot connect to database: %s", exc)
+        logger.error("❌  Cannot connect to database bacause: %s", exc)
         raise
  
  
