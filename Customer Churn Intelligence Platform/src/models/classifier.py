@@ -16,7 +16,7 @@ from datetime import datetime
 from pathlib import Path
 from config.settings import RANDOM_STATE, CV_FOLDS, MODELS_DIR, MODEL_VERSION
 
-#
+#Churn predictor
 
 class ChurnPredictor:
     CLASSIFIERS = {
